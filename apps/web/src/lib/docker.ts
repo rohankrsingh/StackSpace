@@ -6,19 +6,19 @@ const execAsync = promisify(exec);
 const DOCKER_USERNAME = process.env.DOCKER_USERNAME || "rohankrsingh";
 
 const STACK_IMAGES: Record<string, string> = {
-  "nodejs-basic": `${DOCKER_USERNAME}/collabcode-openvscode-node:20`,
-  "node-basic": `${DOCKER_USERNAME}/collabcode-openvscode-node:20`,
-  "react-vite": `${DOCKER_USERNAME}/collabcode-openvscode-node:20`,
-  "html-css-js": `${DOCKER_USERNAME}/collabcode-openvscode-node:20`,
-  "python-basic": `${DOCKER_USERNAME}/collabcode-openvscode-python:3.12`,
-  "dsa-practice": `${DOCKER_USERNAME}/collabcode-openvscode-python:3.12`,
-  "next-js": `${DOCKER_USERNAME}/collabcode-openvscode-nextjs:20`,
-  "nextjs-starter": `${DOCKER_USERNAME}/collabcode-openvscode-nextjs:20`,
-  "java-basic": `${DOCKER_USERNAME}/collabcode-openvscode-java:21`,
-  "cpp-basic": `${DOCKER_USERNAME}/collabcode-openvscode-cpp:bookworm`,
+  "nodejs-basic": `${DOCKER_USERNAME}/stackspace-openvscode-node:20`,
+  "node-basic": `${DOCKER_USERNAME}/stackspace-openvscode-node:20`,
+  "react-vite": `${DOCKER_USERNAME}/stackspace-openvscode-node:20`,
+  "html-css-js": `${DOCKER_USERNAME}/stackspace-openvscode-node:20`,
+  "python-basic": `${DOCKER_USERNAME}/stackspace-openvscode-python:3.12`,
+  "dsa-practice": `${DOCKER_USERNAME}/stackspace-openvscode-python:3.12`,
+  "next-js": `${DOCKER_USERNAME}/stackspace-openvscode-nextjs:20`,
+  "nextjs-starter": `${DOCKER_USERNAME}/stackspace-openvscode-nextjs:20`,
+  "java-basic": `${DOCKER_USERNAME}/stackspace-openvscode-java:21`,
+  "cpp-basic": `${DOCKER_USERNAME}/stackspace-openvscode-cpp:bookworm`,
 };
 
-const DEFAULT_IMAGE = `${DOCKER_USERNAME}/collabcode-openvscode-node:20`;
+const DEFAULT_IMAGE = `${DOCKER_USERNAME}/stackspace-openvscode-node:20`;
 const PORT_RANGE_START = 4000;
 const PORT_RANGE_END = 6000;
 

@@ -51,7 +51,10 @@ export const DashboardLayout = ({
 export const Sidebar = ({ children }: { children: React.ReactNode }) => {
   return (
     <div className="flex flex-col h-full p-6 gap-4">
-      <h2 className="text-lg font-bold text-foreground">CollabCode</h2>
+      <div className="flex items-center gap-2">
+        <img src="/icon.svg" alt="StackSpace" className="w-6 h-6" />
+        <h2 className="text-lg font-bold text-foreground">StackSpace</h2>
+      </div>
       <nav className="flex-1 space-y-2">{children}</nav>
     </div>
   );

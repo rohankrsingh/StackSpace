@@ -40,14 +40,21 @@ export async function POST(
     // If DB says running but container is actually stopped, sync and restart
     if (room.status === "running" && !running) {
       console.log(`ℹ Room ${roomId} marked as running but container is stopped. Restarting...`);
-      await orchestratorRestartRoom(roomId, room.containerName, room.taskArn);
+      const result = await orchestratorRestartRoom(roomId, room.containerName, room.taskArn, room.stackId);
+
+      // Update DB with new Public IP / Task ARN
+      await updateRoomStatus(roomId, "running", {
+        ideUrl: result.ideUrl,
+        taskArn: result.taskArn,
+      });
+
       // Wait a bit for the IDE server to initialize
       await new Promise(resolve => setTimeout(resolve, 3000));
       return NextResponse.json({
         roomId,
         status: "running",
-        ideUrl: room.ideUrl,
-        port: room.port,
+        ideUrl: result.ideUrl,
+        port: result.port,
       });
     }
 
@@ -63,10 +70,13 @@ export async function POST(
 
     try {
       // Restart the stopped container/task
-      await orchestratorRestartRoom(roomId, room.containerName, room.taskArn);
+      const result = await orchestratorRestartRoom(roomId, room.containerName, room.taskArn, room.stackId);
 
-      // Update room status
-      await updateRoomStatus(roomId, "running");
+      // Update room status and new cloud metadata
+      await updateRoomStatus(roomId, "running", {
+        ideUrl: result.ideUrl,
+        taskArn: result.taskArn,
+      });
 
       // Wait for IDE server initialization
       await new Promise(resolve => setTimeout(resolve, isProductionMode() ? 5000 : 3000));
@@ -74,8 +84,8 @@ export async function POST(
       return NextResponse.json({
         roomId,
         status: "running",
-        ideUrl: room.ideUrl,
-        port: room.port,
+        ideUrl: result.ideUrl,
+        port: result.port,
       });
     } catch (error) {
       console.error(`✗ Failed to start container: ${error}`);

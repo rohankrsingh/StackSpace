@@ -1,8 +1,8 @@
 const conf = {
   // Appwrite Configuration
   appwriteEndpoint: process.env.NEXT_PUBLIC_APPWRITE_ENDPOINT || "http://localhost/v1",
-  appwriteProjectId: process.env.NEXT_PUBLIC_APPWRITE_PROJECT_ID || "collabcode",
-  appwriteDatabaseId: process.env.NEXT_PUBLIC_APPWRITE_DB_ID || "collabcode_db",
+  appwriteProjectId: process.env.NEXT_PUBLIC_APPWRITE_PROJECT_ID || "stackspace",
+  appwriteDatabaseId: process.env.NEXT_PUBLIC_APPWRITE_DB_ID || "stackspace_db",
   appwriteRoomsCollectionId: process.env.NEXT_PUBLIC_APPWRITE_ROOMS_COLLECTION_ID || "rooms",
 
   // Socket.IO Configuration

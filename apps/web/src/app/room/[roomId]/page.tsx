@@ -7,8 +7,10 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Input } from "@/components/ui/input";
-import { LayoutGrid, Users, MessageSquare, Activity, Loader2, Power, LogOut, Code, Edit3, Maximize2, Layout, FilePlus, FileText, Trash2, Clock, Keyboard } from "lucide-react";
+import { LayoutGrid, Users, MessageSquare, Activity, Loader2, Power, LogOut, Code, Edit3, Maximize2, Layout, FilePlus, FileText, Trash2, Clock, Keyboard, Loader } from "lucide-react";
 import { motion, AnimatePresence } from "motion/react";
+import LoaderKokonut from "@/components/kokonutui/loader";
+import { MultiStepLoader } from "@/components/ui/multi-step-loader";
 import { useDispatch, useSelector } from "react-redux";
 import { RootState, AppDispatch } from "@/store";
 import { addMessage, incrementUnread, resetUnread } from "@/store/slices/chatSlice";
@@ -65,6 +67,7 @@ export default function RoomPage() {
   const authUser = useSelector((state: RootState) => state.auth.user);
   const [roomStatus, setRoomStatus] = useState<RoomStatus | null>(null);
   const [loading, setLoading] = useState(true);
+  const [startingServer, setStartingServer] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [chatMessage, setChatMessage] = useState("");
   const [onlineUsers, setOnlineUsers] = useState<User[]>([]);
@@ -115,6 +118,28 @@ export default function RoomPage() {
       fetchRoomStatus();
     }
   }, [roomId]);
+
+  // ── Heartbeat: keep room alive while the user is on the page ──────────────
+  // Pings /api/rooms/[roomId]/ping every 2 minutes to update lastActiveAt.
+  // The Vercel cron idle-check stops tasks where lastActiveAt > 10 min ago.
+  useEffect(() => {
+    if (!roomId || !roomStatus || roomStatus.status !== "running") return;
+
+    const PING_INTERVAL_MS = 2 * 60 * 1000; // 2 minutes
+
+    const sendPing = () => {
+      fetch(`/api/rooms/${roomId}/ping`, { method: "POST" }).catch((err) =>
+        console.warn("[Room] Heartbeat ping failed:", err)
+      );
+    };
+
+    // Send an initial ping immediately
+    sendPing();
+
+    const intervalId = setInterval(sendPing, PING_INTERVAL_MS);
+
+    return () => clearInterval(intervalId);
+  }, [roomId, roomStatus?.status]);
 
   // Setup Socket.IO for real-time features
   useEffect(() => {
@@ -288,7 +313,7 @@ export default function RoomPage() {
 
   const handleStartRoom = async () => {
     try {
-      setLoading(true);
+      setStartingServer(true);
       const { account } = await import("@/lib/auth").then(m => ({ account: m.account }));
       const { jwt } = await account.createJWT();
 
@@ -344,7 +369,7 @@ export default function RoomPage() {
         variant: "flat",
       });
     } finally {
-      setLoading(false);
+      setStartingServer(false);
     }
   };
 
@@ -357,16 +382,26 @@ export default function RoomPage() {
     return (
       <ProtectedRoute>
         <div className="flex items-center justify-center min-h-screen bg-background">
-          <div className="flex flex-col items-center gap-4">
-            <div className="relative w-12 h-12">
-              <Loader2 className="h-12 w-12 animate-spin text-green-500" />
-            </div>
-            <p className="text-white text-lg font-medium">Loading room...</p>
-          </div>
+          <LoaderKokonut
+            title="Entering Room..."
+            subtitle="Securely connecting to your collaborative environment"
+            size="lg"
+          />
         </div>
       </ProtectedRoute>
     );
   }
+
+  const loadingStates = [
+    { text: "Waking up the cloud container" },
+    { text: "Allocating Fargate resources" },
+    { text: "Configuring security groups" },
+    { text: "Discovering public endpoint" },
+    { text: "Injecting terminal proxy extension" },
+    { text: "Starting VS Code backend" },
+    { text: "Almost there..." },
+    { text: "IDE Ready!" },
+  ];
 
   if (error || !roomStatus) {
     return (
@@ -393,6 +428,11 @@ export default function RoomPage() {
 
   return (
     <ProtectedRoute>
+      <MultiStepLoader
+        loadingStates={loadingStates}
+        loading={startingServer}
+        duration={1500}
+      />
       <RoomContent
         roomId={roomId}
         roomStatus={roomStatus}

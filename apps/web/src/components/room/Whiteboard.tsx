@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useRef } from "react";
 import dynamic from "next/dynamic";
-import { Loader2 } from "lucide-react";
+import LoaderKokonut from "@/components/kokonutui/loader";
 import { WhiteboardService } from "@/lib/services";
 import { getSocket } from "@/lib/socket";
 import "@excalidraw/excalidraw/index.css";
@@ -101,7 +101,11 @@ export function Whiteboard({ roomId }: WhiteboardProps) {
     if (isLoading || !initialData) {
         return (
             <div className="flex justify-center items-center h-full">
-                <Loader2 className="animate-spin text-muted-foreground" />
+                <LoaderKokonut
+                    title="Loading Whiteboard..."
+                    subtitle="Syncing collaborative canvas"
+                    size="sm"
+                />
             </div>
         );
     }

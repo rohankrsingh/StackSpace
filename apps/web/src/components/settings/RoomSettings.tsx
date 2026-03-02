@@ -7,6 +7,7 @@ import { Label } from "@/components/ui/label";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Switch } from "@/components/ui/switch";
 import { Loader2, Code, Edit3, Bell, Layout, Save } from "lucide-react";
+import LoaderKokonut from "@/components/kokonutui/loader";
 import { usePreferences } from "@/components/PreferencesProvider";
 import { Separator } from "@/components/ui/separator";
 
@@ -47,7 +48,11 @@ export function RoomSettings() {
     if (loading) {
         return (
             <div className="flex items-center justify-center h-64">
-                <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+                <LoaderKokonut
+                    title="Loading Preferences..."
+                    subtitle="Getting your personalized settings"
+                    size="sm"
+                />
             </div>
         );
     }

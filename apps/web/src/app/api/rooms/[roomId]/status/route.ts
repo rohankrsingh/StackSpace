@@ -26,14 +26,17 @@ export async function GET(
         room.taskArn
       );
 
-      // Sync status if mismatch
+      // Sync status if mismatch or IP changed
       const dbStatus = room.status;
       const actualStatus = running ? "running" : "stopped";
 
-      if (dbStatus !== actualStatus) {
-        console.log(`ℹ Status mismatch for ${roomId}: DB=${dbStatus}, actual=${actualStatus}. Updating...`);
-        await updateRoomStatus(roomId, actualStatus);
+      if (dbStatus !== actualStatus || (running && liveIdeUrl && liveIdeUrl !== room.ideUrl)) {
+        console.log(`ℹ Syncing room ${roomId} metadata...`);
+        await updateRoomStatus(roomId, actualStatus, {
+          ...(liveIdeUrl ? { ideUrl: liveIdeUrl } : {})
+        });
         room.status = actualStatus;
+        if (liveIdeUrl) room.ideUrl = liveIdeUrl;
       }
 
       // Return full room data

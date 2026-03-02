@@ -3,7 +3,6 @@ import { Inter } from "next/font/google";
 import "./globals.css";
 import { Providers } from "./providers";
 
-// Using Inter - a modern, highly readable font designed for screens
 const inter = Inter({
   variable: "--font-sans",
   subsets: ["latin"],
@@ -11,8 +10,12 @@ const inter = Inter({
 });
 
 export const metadata: Metadata = {
-  title: "CollabCode - Collaborative VS Code IDE",
-  description: "Real-time collaborative coding environment",
+  title: "StackSpace - Collaborative Coding Platform",
+  description: "Real-time collaborative coding environment with cloud IDE, whiteboard, and chat",
+  icons: {
+    icon: "/icon.svg",
+    apple: "/icon.svg",
+  },
 };
 
 export default function RootLayout({

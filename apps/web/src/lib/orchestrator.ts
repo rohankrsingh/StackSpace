@@ -1,7 +1,10 @@
 /**
- * Orchestrator Client
- * Abstracts container management between local Docker and AWS Orchestrator.
- * Mode determined by ORCHESTRATOR_URL environment variable.
+ * Orchestrator Client — abstracts container management.
+ *
+ * LOCAL (dev): uses local Docker via docker.ts
+ * PRODUCTION:  uses AWS ECS Fargate directly via ecs.ts
+ *
+ * Production mode is active when AWS_REGION env var is set.
  */
 
 import {
@@ -10,10 +13,9 @@ import {
     restartContainer,
     isContainerRunning,
     removeContainer,
-    getRandomPort
+    getRandomPort,
 } from "./docker";
-
-const ORCHESTRATOR_URL = process.env.ORCHESTRATOR_URL;
+import { ecsRunTask, ecsStopTask, ecsGetTaskStatus } from "./ecs";
 
 export interface StartRoomResult {
     ideUrl: string;
@@ -27,9 +29,12 @@ export interface RoomStatusResult {
     ideUrl?: string;
 }
 
+/** True when AWS env vars are present — enables ECS path */
 export function isProductionMode(): boolean {
-    return !!ORCHESTRATOR_URL;
+    return !!(process.env.AWS_REGION && process.env.ECS_CLUSTER);
 }
+
+// ── Start ─────────────────────────────────────────────────────────────────────
 
 export async function orchestratorStartRoom(
     roomId: string,
@@ -38,27 +43,16 @@ export async function orchestratorStartRoom(
     existingPort?: number
 ): Promise<StartRoomResult> {
     if (isProductionMode()) {
-        const response = await fetch(`${ORCHESTRATOR_URL}/rooms/start`, {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ roomId, stackId, workspacePath }),
-        });
-
-        if (!response.ok) {
-            const error = await response.json().catch(() => ({ message: "Unknown error" }));
-            throw new Error(error.message || "Failed to start room via orchestrator");
-        }
-
-        const data = await response.json();
+        const { taskArn, ideUrl } = await ecsRunTask(roomId, stackId);
         return {
-            ideUrl: data.ideUrl,
-            containerName: data.containerName || `ecs-task-${roomId}`,
-            port: data.port || 0,
-            taskArn: data.taskArn,
+            ideUrl,
+            containerName: `ecs-task-${roomId}`,
+            port: 3000,
+            taskArn,
         };
     }
 
-    const port = existingPort || await getRandomPort();
+    const port = existingPort || (await getRandomPort());
     const { containerName } = await startOpenVSCode(roomId, workspacePath, port, stackId);
     return {
         ideUrl: `http://localhost:${port}`,
@@ -67,26 +61,59 @@ export async function orchestratorStartRoom(
     };
 }
 
+// ── Restart ───────────────────────────────────────────────────────────────────
+
 export async function orchestratorRestartRoom(
     roomId: string,
     containerName: string,
-    taskArn?: string
-): Promise<void> {
+    taskArn?: string,
+    stackId: string = "node-basic"
+): Promise<StartRoomResult> {
     if (isProductionMode()) {
-        const response = await fetch(`${ORCHESTRATOR_URL}/rooms/restart`, {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ roomId, taskArn }),
-        });
-
-        if (!response.ok) {
-            const error = await response.json().catch(() => ({ message: "Unknown error" }));
-            throw new Error(error.message || "Failed to restart room via orchestrator");
+        // Stop old task (ignore errors if already stopped)
+        if (taskArn) {
+            await ecsStopTask(taskArn);
         }
-    } else {
-        await restartContainer(containerName);
+        const { taskArn: newTaskArn, ideUrl } = await ecsRunTask(roomId, stackId);
+        return {
+            ideUrl,
+            containerName: `ecs-task-${roomId}`,
+            port: 3000,
+            taskArn: newTaskArn,
+        };
     }
+    await restartContainer(containerName);
+    return {
+        ideUrl: `http://localhost:0`, // Placeholders for local dev
+        containerName,
+        port: 0,
+    };
 }
+
+/**
+ * Restart with explicit stackId (preferred over restartRoom for production).
+ */
+export async function orchestratorRestartRoomWithStack(
+    roomId: string,
+    containerName: string,
+    stackId: string,
+    taskArn?: string
+): Promise<StartRoomResult> {
+    if (isProductionMode()) {
+        if (taskArn) await ecsStopTask(taskArn);
+        const { taskArn: newTaskArn, ideUrl } = await ecsRunTask(roomId, stackId);
+        return {
+            ideUrl,
+            containerName: `ecs-task-${roomId}`,
+            port: 3000,
+            taskArn: newTaskArn,
+        };
+    }
+    await restartContainer(containerName);
+    return { ideUrl: `http://localhost:0`, containerName, port: 0 };
+}
+
+// ── Stop ──────────────────────────────────────────────────────────────────────
 
 export async function orchestratorStopRoom(
     roomId: string,
@@ -94,20 +121,13 @@ export async function orchestratorStopRoom(
     taskArn?: string
 ): Promise<void> {
     if (isProductionMode()) {
-        const response = await fetch(`${ORCHESTRATOR_URL}/rooms/stop`, {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ roomId, taskArn }),
-        });
-
-        if (!response.ok) {
-            const error = await response.json().catch(() => ({ message: "Unknown error" }));
-            throw new Error(error.message || "Failed to stop room via orchestrator");
-        }
-    } else {
-        await stopContainer(containerName);
+        if (taskArn) await ecsStopTask(taskArn);
+        return;
     }
+    await stopContainer(containerName);
 }
+
+// ── Status ────────────────────────────────────────────────────────────────────
 
 export async function orchestratorGetStatus(
     roomId: string,
@@ -115,21 +135,14 @@ export async function orchestratorGetStatus(
     taskArn?: string
 ): Promise<RoomStatusResult> {
     if (isProductionMode()) {
-        const response = await fetch(
-            `${ORCHESTRATOR_URL}/rooms/status?roomId=${roomId}&taskArn=${taskArn || ""}`,
-            { method: "GET", headers: { "Content-Type": "application/json" } }
-        );
-
-        if (!response.ok) {
-            return { running: false };
-        }
-
-        const data = await response.json();
-        return { running: data.running, ideUrl: data.ideUrl };
+        if (!taskArn) return { running: false };
+        const { running, ideUrl } = await ecsGetTaskStatus(taskArn);
+        return { running, ideUrl: ideUrl ?? undefined };
     }
-
     return { running: await isContainerRunning(containerName) };
 }
+
+// ── Remove ────────────────────────────────────────────────────────────────────
 
 export async function orchestratorRemoveRoom(
     roomId: string,
@@ -137,27 +150,23 @@ export async function orchestratorRemoveRoom(
     taskArn?: string
 ): Promise<void> {
     if (isProductionMode()) {
-        const response = await fetch(`${ORCHESTRATOR_URL}/rooms/delete`, {
-            method: "DELETE",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ roomId, taskArn }),
-        });
-
-        if (!response.ok) {
-            const error = await response.json().catch(() => ({ message: "Unknown error" }));
-            throw new Error(error.message || "Failed to delete room via orchestrator");
-        }
-    } else {
-        await removeContainer(containerName);
+        if (taskArn) await ecsStopTask(taskArn);
+        // EFS workspace is preserved intentionally
+        return;
     }
+    await removeContainer(containerName);
 }
 
-export async function orchestratorPingRoom(roomId: string, taskArn?: string): Promise<void> {
-    if (isProductionMode()) {
-        await fetch(`${ORCHESTRATOR_URL}/rooms/ping`, {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ roomId, taskArn }),
-        }).catch(() => console.warn(`Failed to ping room ${roomId}`));
-    }
+// ── Ping ──────────────────────────────────────────────────────────────────────
+
+/**
+ * In production, ping is handled by the Vercel Cron idle-check reading
+ * lastActiveAt from Appwrite. This function is a no-op in production
+ * (the /ping route updates Appwrite directly).
+ */
+export async function orchestratorPingRoom(
+    _roomId: string,
+    _taskArn?: string
+): Promise<void> {
+    // no-op — Appwrite lastActiveAt is the source of truth
 }

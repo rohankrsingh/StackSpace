@@ -5,8 +5,9 @@ import { useSelector } from "react-redux";
 import { useRouter } from "next/navigation";
 import { RootState } from "@/store";
 import Link from "next/link";
+import Image from "next/image";
 import { Button } from "@/components/ui/button";
-import { Code2, Users, Zap, GitBranch, MessageSquare, Play, ArrowRight, Sparkles } from "lucide-react";
+import { Users, MessageSquare, Play, ArrowRight, Sparkles } from "lucide-react";
 import MouseEffectCard from "@/components/kokonutui/mouse-effect-card";
 
 export default function Home() {
@@ -22,12 +23,10 @@ export default function Home() {
       {/* Navigation */}
       <nav className="fixed top-0 w-full z-50 backdrop-blur-md bg-black/40 border-b border-green-900/20">
         <div className="max-w-7xl mx-auto px-6 py-4 flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <div className="w-8 h-8 bg-gradient-to-br from-green-400 to-emerald-600 rounded flex items-center justify-center">
-              <Code2 className="h-5 w-5 text-black" />
-            </div>
-            <span className="text-2xl font-bold bg-gradient-to-r from-green-400 to-emerald-500 bg-clip-text text-transparent">CollabCode</span>
-          </div>
+          <Link href="/" className="flex items-center gap-2">
+            <Image src="/icon.svg" alt="StackSpace" width={32} height={32} />
+            <span className="text-2xl font-bold bg-gradient-to-r from-green-400 to-emerald-500 bg-clip-text text-transparent">StackSpace</span>
+          </Link>
           {isAuthenticated ? (
             <Link href="/dashboard">
               <Button variant="default" className="">
@@ -231,7 +230,7 @@ export default function Home() {
             Ready to Code <span className="bg-gradient-to-r from-green-400 to-emerald-500 bg-clip-text text-transparent">Together?</span>
           </h2>
           <p className="text-xl text-gray-400 mb-12">
-            Join teams worldwide using CollabCode for seamless remote collaboration.
+            Join teams worldwide using StackSpace for seamless remote collaboration.
           </p>
           <div className="flex gap-4 justify-center flex-wrap">
             <Link href="/auth/signup">
@@ -254,12 +253,10 @@ export default function Home() {
         <div className="max-w-6xl mx-auto">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
-              <div className="w-8 h-8 bg-gradient-to-br from-green-400 to-emerald-600 rounded flex items-center justify-center">
-                <Code2 className="h-5 w-5 text-black" />
-              </div>
-              <span className="text-lg font-bold">CollabCode</span>
+              <Image src="/icon.svg" alt="StackSpace" width={32} height={32} />
+              <span className="text-lg font-bold">StackSpace</span>
             </div>
-            <p className="text-gray-500 text-sm">© 2026 CollabCode. All rights reserved.</p>
+            <p className="text-gray-500 text-sm">© 2026 StackSpace. All rights reserved.</p>
           </div>
         </div>
       </footer>

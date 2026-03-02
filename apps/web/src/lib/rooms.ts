@@ -183,3 +183,21 @@ export async function listRoomsByOwner(ownerId: string) {
   );
   return docs.documents;
 }
+
+/**
+ * Returns all rooms currently marked as "running" in Appwrite.
+ * Used by the Vercel Cron idle-check job to find stale rooms.
+ */
+export async function getAllRunningRooms() {
+  const docs = await databases.listDocuments(
+    DATABASE_ID,
+    "rooms",
+    [Query.equal("status", "running"), Query.limit(100)]
+  );
+  return docs.documents as unknown as Array<{
+    roomId: string;
+    taskArn?: string;
+    lastActiveAt: string;
+    status: string;
+  }>;
+}

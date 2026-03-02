@@ -51,7 +51,7 @@ export async function POST(request: NextRequest) {
         console.log(`✓ Template files created for stack: ${stack.name}`);
       } else {
         // In production, workspace path will be on EFS
-        workspacePath = `/collabcode/workspaces/${roomId}`;
+        workspacePath = `/stackspace/workspaces/${roomId}`;
       }
 
       // 3. Start container via orchestrator (handles both local Docker and AWS)

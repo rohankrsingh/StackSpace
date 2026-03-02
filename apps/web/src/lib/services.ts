@@ -1,7 +1,7 @@
 import { ID, Query } from "appwrite";
 import { client, databases } from "./auth";
 
-const DATABASE_ID = process.env.NEXT_PUBLIC_APPWRITE_DATABASE_ID || "collabcode_db";
+const DATABASE_ID = process.env.NEXT_PUBLIC_APPWRITE_DATABASE_ID || "stackspace_db";
 const MESSAGES_COLLECTION_ID = "chat_messages";
 const ACTIVITIES_COLLECTION_ID = "activity_logs";
 

@@ -8,6 +8,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Loader2, Save, User, Check } from "lucide-react";
+import LoaderKokonut from "@/components/kokonutui/loader";
 import { usePreferences } from "@/components/PreferencesProvider";
 import { AvatarSelector } from "./AvatarSelector";
 import { updateName } from "@/lib/preferences";
@@ -79,7 +80,11 @@ export function ProfileSettings() {
     if (loading) {
         return (
             <div className="flex items-center justify-center h-64">
-                <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+                <LoaderKokonut
+                    title="Loading Profile..."
+                    subtitle="Getting your account details"
+                    size="sm"
+                />
             </div>
         );
     }
