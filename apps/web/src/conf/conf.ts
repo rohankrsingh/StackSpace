@@ -1,8 +1,8 @@
 const conf = {
   // Appwrite Configuration
-  appwriteEndpoint: process.env.NEXT_PUBLIC_APPWRITE_ENDPOINT || "http://localhost/v1",
-  appwriteProjectId: process.env.NEXT_PUBLIC_APPWRITE_PROJECT_ID || "stackspace",
-  appwriteDatabaseId: process.env.NEXT_PUBLIC_APPWRITE_DB_ID || "stackspace_db",
+  appwriteEndpoint: process.env.NEXT_PUBLIC_APPWRITE_ENDPOINT || "https://fra.cloud.appwrite.io/v1",
+  appwriteProjectId: process.env.NEXT_PUBLIC_APPWRITE_PROJECT_ID || "project_id",
+  appwriteDatabaseId: process.env.NEXT_PUBLIC_APPWRITE_DB_ID || "database_id",
   appwriteRoomsCollectionId: process.env.NEXT_PUBLIC_APPWRITE_ROOMS_COLLECTION_ID || "rooms",
 
   // Socket.IO Configuration

@@ -4,8 +4,8 @@ import { NextRequest } from "next/server";
 
 export async function createSessionClient(request?: NextRequest) {
     const client = new Client()
-        .setEndpoint(process.env.NEXT_PUBLIC_APPWRITE_ENDPOINT || "")
-        .setProject(process.env.NEXT_PUBLIC_APPWRITE_PROJECT_ID || "");
+        .setEndpoint(process.env.NEXT_PUBLIC_APPWRITE_ENDPOINT || process.env.APPWRITE_ENDPOINT || "https://fra.cloud.appwrite.io/v1")
+        .setProject(process.env.NEXT_PUBLIC_APPWRITE_PROJECT_ID || process.env.APPWRITE_PROJECT_ID || "project_id");
 
     // 1. Check for JWT in headers (Preferred for Cross-Domain/Cloud)
     const jwt = request?.headers.get("x-appwrite-jwt");

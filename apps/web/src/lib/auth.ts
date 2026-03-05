@@ -1,8 +1,8 @@
 import { Client, Account, ID, Databases } from "appwrite";
 
 export const client = new Client()
-  .setEndpoint(process.env.NEXT_PUBLIC_APPWRITE_ENDPOINT || "")
-  .setProject(process.env.NEXT_PUBLIC_APPWRITE_PROJECT_ID || "");
+  .setEndpoint(process.env.NEXT_PUBLIC_APPWRITE_ENDPOINT || "https://fra.cloud.appwrite.io/v1")
+  .setProject(process.env.NEXT_PUBLIC_APPWRITE_PROJECT_ID || "project_id");
 
 export const account = new Account(client);
 export const databases = new Databases(client);
@@ -41,13 +41,10 @@ export async function logout() {
 
 export async function getCurrentUser() {
   try {
-    const user = await account.get();
-    // Transform Appwrite user to match our Redux state format
-    return {
-      id: user.$id,
-      name: user.name,
-      email: user.email,
-    };
+    const response = await fetch("/api/auth/me", { credentials: "include" });
+    if (!response.ok) return null;
+    const user = await response.json();
+    return user as { id: string; name: string; email: string };
   } catch (error) {
     return null;
   }

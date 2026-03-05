@@ -15,6 +15,8 @@ import { NextRequest, NextResponse } from "next/server";
 import { getAllRunningRooms, updateRoomStatus } from "@/lib/rooms";
 import { ecsStopTask } from "@/lib/ecs";
 
+export const dynamic = 'force-dynamic';
+
 const IDLE_TIMEOUT_MS = parseInt(
     process.env.IDLE_TIMEOUT_MS || "600000", // 10 minutes
     10
