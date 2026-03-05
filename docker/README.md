@@ -1,4 +1,4 @@
-# CollabCode Docker Images
+# StackSpace Docker Images
 
 Production-ready Docker images with OpenVSCode Server for different programming stacks.
 
@@ -12,11 +12,11 @@ Built on researched stable versions:
 
 | Image | Runtime | Version | Size | Stacks |
 |-------|---------|---------|------|--------|
-| `collabcode-openvscode-node` | Node.js LTS | 20 | ~700MB | Node.js, React+Vite, HTML/CSS/JS |
-| `collabcode-openvscode-python` | Python | 3.12 | ~600MB | Python, DSA Practice |
-| `collabcode-openvscode-nextjs` | Node.js + Next | 20 | ~750MB | Next.js |
-| `collabcode-openvscode-java` | Eclipse Temurin | 21 | ~800MB | Java |
-| `collabcode-openvscode-cpp` | GCC | bookworm | ~650MB | C++ |
+| `stackspace-openvscode-node` | Node.js LTS | 20 | ~700MB | Node.js, React+Vite, HTML/CSS/JS |
+| `stackspace-openvscode-python` | Python | 3.12 | ~600MB | Python, DSA Practice |
+| `stackspace-openvscode-nextjs` | Node.js + Next | 20 | ~750MB | Next.js |
+| `stackspace-openvscode-java` | Eclipse Temurin | 21 | ~800MB | Java |
+| `stackspace-openvscode-cpp` | GCC | bookworm | ~650MB | C++ |
 
 ## Building Images
 
@@ -26,11 +26,11 @@ Built on researched stable versions:
 cd docker
 
 # Build individual image
-docker build -f Dockerfile.nodejs -t collabcode-openvscode-node:20 ..
-docker build -f Dockerfile.python -t collabcode-openvscode-python:3.12 ..
-docker build -f Dockerfile.nextjs -t collabcode-openvscode-nextjs:20 ..
-docker build -f Dockerfile.java -t collabcode-openvscode-java:21 ..
-docker build -f Dockerfile.cpp -t collabcode-openvscode-cpp:bookworm ..
+docker build -f Dockerfile.nodejs -t stackspace-openvscode-node:20 ..
+docker build -f Dockerfile.python -t stackspace-openvscode-python:3.12 ..
+docker build -f Dockerfile.nextjs -t stackspace-openvscode-nextjs:20 ..
+docker build -f Dockerfile.java -t stackspace-openvscode-java:21 ..
+docker build -f Dockerfile.cpp -t stackspace-openvscode-cpp:bookworm ..
 ```
 
 ### Build and Push to Docker Hub
@@ -44,11 +44,11 @@ chmod +x build-and-push.sh
 ```
 
 This will build and push:
-- `yourusername/collabcode-openvscode-node:20`
-- `yourusername/collabcode-openvscode-python:3.12`
-- `yourusername/collabcode-openvscode-nextjs:20`
-- `yourusername/collabcode-openvscode-java:21`
-- `yourusername/collabcode-openvscode-cpp:bookworm`
+- `yourusername/stackspace-openvscode-node:20`
+- `yourusername/stackspace-openvscode-python:3.12`
+- `yourusername/stackspace-openvscode-nextjs:20`
+- `yourusername/stackspace-openvscode-java:21`
+- `yourusername/stackspace-openvscode-cpp:bookworm`
 
 ## What's Included
 
@@ -84,20 +84,20 @@ Each image includes:
 - CMake, Make, gdb, valgrind
 - Debian Bookworm stable packages
 
-## Usage in CollabCode
+## Usage in StackSpace
 
 Update `docker.ts` to map stacks to images:
 
 ```typescript
 const STACK_IMAGES: Record<string, string> = {
-  "nodejs-basic": "yourusername/collabcode-nodejs:latest",
-  "python-basic": "yourusername/collabcode-python:latest",
-  "react-vite": "yourusername/collabcode-nodejs:latest",
-  "next-js": "yourusername/collabcode-nextjs:latest",
-  "java-basic": "yourusername/collabcode-java:latest",
-  "cpp-basic": "yourusername/collabcode-cpp:latest",
-  "html-css-js": "yourusername/collabcode-nodejs:latest",
-  "dsa-practice": "yourusername/collabcode-python:latest",
+  "nodejs-basic": "yourusername/stackspace-nodejs:latest",
+  "python-basic": "yourusername/stackspace-python:latest",
+  "react-vite": "yourusername/stackspace-nodejs:latest",
+  "next-js": "yourusername/stackspace-nextjs:latest",
+  "java-basic": "yourusername/stackspace-java:latest",
+  "cpp-basic": "yourusername/stackspace-cpp:latest",
+  "html-css-js": "yourusername/stackspace-nodejs:latest",
+  "dsa-practice": "yourusername/stackspace-python:latest",
 };
 ```
 
@@ -125,8 +125,8 @@ const STACK_IMAGES: Record<string, string> = {
 
 To update an image:
 1. Modify the Dockerfile
-2. Rebuild: `docker build -f docker/Dockerfile.xxx -t yourusername/collabcode-xxx:latest .`
-3. Push: `docker push yourusername/collabcode-xxx:latest`
+2. Rebuild: `docker build -f docker/Dockerfile.xxx -t yourusername/stackspace-xxx:latest .`
+3. Push: `docker push yourusername/stackspace-xxx:latest`
 
 Or use the script:
 ```bash

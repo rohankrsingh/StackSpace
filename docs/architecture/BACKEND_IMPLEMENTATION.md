@@ -1,4 +1,4 @@
-## CollabCode Backend Implementation
+## StackSpace Backend Implementation
 
 This document describes the fully implemented backend with 6 API routes for managing collaborative rooms.
 
@@ -127,7 +127,7 @@ GET /api/rooms/abc123def45/status
   "status": "running",
   "ideUrl": "http://localhost:5000",
   "port": 4532,
-  "workspacePath": "/home/rohan/Documents/collabcode/workspaces/abc123def45",
+  "workspacePath": "/home/rohan/Documents/stackspace/workspaces/abc123def45",
   "createdAt": "2024-01-15T10:30:00Z",
   "lastActiveAt": "2024-01-15T11:45:00Z"
 }

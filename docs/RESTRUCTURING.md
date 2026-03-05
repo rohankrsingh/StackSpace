@@ -1,8 +1,8 @@
-# ✨ CollabCode - Restructured to Scalable Architecture
+# ✨ StackSpace - Restructured to Scalable Architecture
 
 ## What Changed
 
-Your CollabCode project has been restructured to match the scalable, enterprise-grade organization of your BlogWebsite. This makes the codebase more maintainable, testable, and easier to extend.
+Your StackSpace project has been restructured to match the scalable, enterprise-grade organization of your BlogWebsite. This makes the codebase more maintainable, testable, and easier to extend.
 
 ---
 

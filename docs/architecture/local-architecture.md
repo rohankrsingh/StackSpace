@@ -1,8 +1,8 @@
-# CollabCode Local Architecture Documentation
+# StackSpace Local Architecture Documentation
 
 ## Overview
 
-CollabCode currently runs as a local development environment using Docker containers for IDE instances. This document captures the current implementation before migrating to AWS.
+StackSpace currently runs as a local development environment using Docker containers for IDE instances. This document captures the current implementation before migrating to AWS.
 
 ## System Architecture
 
@@ -58,11 +58,11 @@ Custom Docker Hub images hosted under `rohankrsingh/*`:
 
 | Stack ID | Image | Runtime Version |
 |----------|-------|----------------|
-| `nodejs-basic`, `react-vite`, `html-css-js` | `collabcode-openvscode-node:20` | Node.js 20 LTS |
-| `python-basic`, `dsa-practice` | `collabcode-openvscode-python:3.12` | Python 3.12 |
-| `next-js` | `collabcode-openvscode-nextjs:20` | Next.js + Node 20 |
-| `java-basic` | `collabcode-openvscode-java:21` | OpenJDK 21 (Temurin) |
-| `cpp-basic` | `collabcode-openvscode-cpp:bookworm` | g++ on Debian Bookworm |
+| `nodejs-basic`, `react-vite`, `html-css-js` | `stackspace-openvscode-node:20` | Node.js 20 LTS |
+| `python-basic`, `dsa-practice` | `stackspace-openvscode-python:3.12` | Python 3.12 |
+| `next-js` | `stackspace-openvscode-nextjs:20` | Next.js + Node 20 |
+| `java-basic` | `stackspace-openvscode-java:21` | OpenJDK 21 (Temurin) |
+| `cpp-basic` | `stackspace-openvscode-cpp:bookworm` | g++ on Debian Bookworm |
 
 ### Container Configuration
 

@@ -1,7 +1,7 @@
-# CollabCode - Complete System Architecture
+# StackSpace - Complete System Architecture
 
 ## Overview
-CollabCode is a real-time collaborative VS Code IDE platform built with Next.js, Appwrite, Docker, and Socket.IO.
+StackSpace is a real-time collaborative VS Code IDE platform built with Next.js, Appwrite, Docker, and Socket.IO.
 
 ## Architecture Diagram
 

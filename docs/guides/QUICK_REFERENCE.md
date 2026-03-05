@@ -1,16 +1,16 @@
-# CollabCode MVP - Quick Reference
+# StackSpace MVP - Quick Reference
 
 ## 🚀 Start Both Servers (Copy & Paste)
 
 ### Terminal 1 - Frontend
 ```bash
-cd /home/rohan/Documents/collabcode/apps/web && npm run dev
+cd /home/rohan/Documents/stackspace/apps/web && npm run dev
 ```
 → Opens: http://localhost:3000
 
 ### Terminal 2 - Socket Server
 ```bash
-cd /home/rohan/Documents/collabcode/apps/socket-server && npm run dev
+cd /home/rohan/Documents/stackspace/apps/socket-server && npm run dev
 ```
 → Runs on: http://localhost:3001
 
@@ -91,7 +91,7 @@ NEXT_PUBLIC_SOCKET_URL=http://localhost:3001
 
 # Appwrite (optional)
 NEXT_PUBLIC_APPWRITE_ENDPOINT=http://localhost/v1
-NEXT_PUBLIC_APPWRITE_PROJECT_ID=collabcode
+NEXT_PUBLIC_APPWRITE_PROJECT_ID=stackspace
 ```
 
 ---
@@ -171,7 +171,7 @@ socket.on('activity:new', (data) => {})
 
 ```bash
 # Install everything
-cd /home/rohan/Documents/collabcode
+cd /home/rohan/Documents/stackspace
 npm install && npm install --workspaces
 
 # Frontend only
@@ -312,4 +312,4 @@ For issues:
 
 ---
 
-**Built with ❤️ by GitHub Copilot | CollabCode MVP**
+**Built with ❤️ by GitHub Copilot | StackSpace MVP**

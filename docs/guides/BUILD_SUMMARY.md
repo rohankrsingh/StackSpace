@@ -1,10 +1,10 @@
-# 🎉 CollabCode MVP - Build Complete
+# 🎉 StackSpace MVP - Build Complete
 
 ## Project Overview
 
-**CollabCode** is a working MVP (Minimum Viable Product) of a collaborative VS Code web IDE. It enables real-time code collaboration with presence awareness, chat, activity tracking, and local workspace persistence.
+**StackSpace** is a working MVP (Minimum Viable Product) of a collaborative VS Code web IDE. It enables real-time code collaboration with presence awareness, chat, activity tracking, and local workspace persistence.
 
-**Location:** `/home/rohan/Documents/collabcode`
+**Location:** `/home/rohan/Documents/stackspace`
 
 ---
 
@@ -59,14 +59,14 @@
 
 **Terminal 1 - Frontend:**
 ```bash
-cd /home/rohan/Documents/collabcode/apps/web
+cd /home/rohan/Documents/stackspace/apps/web
 npm run dev
 # Opens on http://localhost:3000
 ```
 
 **Terminal 2 - Socket.IO Server:**
 ```bash
-cd /home/rohan/Documents/collabcode/apps/socket-server
+cd /home/rohan/Documents/stackspace/apps/socket-server
 npm run dev
 # Runs on http://localhost:3001
 ```
@@ -84,7 +84,7 @@ npm run dev
 ## 📁 Project Structure
 
 ```
-collabcode/
+stackspace/
 ├── apps/
 │   ├── web/                          # Next.js Frontend
 │   │   ├── app/
@@ -229,8 +229,8 @@ workspaces/
 `.env.local` (Next.js):
 ```env
 NEXT_PUBLIC_APPWRITE_ENDPOINT=http://localhost/v1
-NEXT_PUBLIC_APPWRITE_PROJECT_ID=collabcode
-NEXT_PUBLIC_APPWRITE_DB_ID=collabcode_db
+NEXT_PUBLIC_APPWRITE_PROJECT_ID=stackspace
+NEXT_PUBLIC_APPWRITE_DB_ID=stackspace_db
 NEXT_PUBLIC_APPWRITE_ROOMS_COLLECTION_ID=rooms
 NEXT_PUBLIC_SOCKET_URL=http://localhost:3001
 ```

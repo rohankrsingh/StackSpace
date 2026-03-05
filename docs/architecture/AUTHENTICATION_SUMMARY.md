@@ -254,7 +254,7 @@ For production deployment:
 
 🎉 **AUTHENTICATION SYSTEM COMPLETE AND PRODUCTION-READY**
 
-The CollabCode platform now has:
+The StackSpace platform now has:
 - Secure user authentication via Appwrite
 - Redux-based state management
 - Protected routes for authorized access only

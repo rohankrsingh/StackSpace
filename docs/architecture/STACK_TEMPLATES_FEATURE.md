@@ -354,4 +354,4 @@ edition = "2021"
 
 ---
 
-This feature makes CollabCode feel like Replit - users see curated options instead of blank rooms. Clean, professional, and ready to code!
+This feature makes StackSpace feel like Replit - users see curated options instead of blank rooms. Clean, professional, and ready to code!

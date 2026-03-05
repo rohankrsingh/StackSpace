@@ -3,109 +3,65 @@ FROM node:20-bookworm-slim
 LABEL maintainer="CollabCode"
 LABEL description="OpenVSCode Server with Node.js 20 LTS (Bookworm) runtime"
 
-# Install system dependencies
+# ── System dependencies ────────────────────────────────────────────────────────
 RUN apt-get update && apt-get install -y --no-install-recommends \
-    curl \
-    wget \
-    git \
-    build-essential \
-    python3 \
-    ca-certificates && \
+    curl wget git build-essential python3 iproute2 ca-certificates && \
     rm -rf /var/lib/apt/lists/*
 
-# Install OpenVSCode Server
+# ── OpenVSCode Server ──────────────────────────────────────────────────────────
 RUN mkdir -p /opt/code-server && \
     curl -fsSL https://github.com/gitpod-io/openvscode-server/releases/download/openvscode-server-v1.106.3/openvscode-server-v1.106.3-linux-x64.tar.gz | \
     tar -xz --strip-components=1 -C /opt/code-server
 
-# Create workspace directory
-RUN mkdir -p /home/workspace && chmod 777 /home/workspace
-
-# Set environment variables
+# Set env vars early — needed by extension installer below
 ENV OPENVSCODE_SERVER_ROOT="/opt/code-server"
 ENV OPENVSCODE="${OPENVSCODE_SERVER_ROOT}/bin/openvscode-server"
 ENV HOME="/home/workspace"
 
-# Create VS Code settings for both Machine and User
-# Create default settings file in a persistent location (not workspace)
-RUN mkdir -p /opt/collabcode-defaults \
-    && echo '{\n\
-    "files.autoSave": "afterDelay",\n\
-    "files.autoSaveDelay": 500,\n\
-    "workbench.colorTheme": "Default Dark Modern",\n\
-    "editor.formatOnPaste": true,\n\
-    "editor.mouseWheelZoom": true,\n\
-    "editor.wordWrap": "on",\n\
-    "editor.aiStats.enabled": false,\n\
-    "editor.autoIndentOnPaste": true,\n\
-    "editor.cursorSmoothCaretAnimation": "on",\n\
-    "workbench.secondarySideBar.defaultVisibility": "hidden",\n\
-    "workbench.iconTheme": "vs-seti",\n\
-    "workbench.statusBar.visible": true,\n\
-    "workbench.view.alwaysShowHeaderActions": true,\n\
-    "window.autoDetectColorScheme": false,\n\
-    "chat.agent.enabled": false,\n\
-    "terminal.integrated.middleClickBehavior": "paste",\n\
-    "window.menuBarVisibility": "classic",\n\
-    "terminal.integrated.cwd": "/home/workspace",\n\
-    "terminal.integrated.defaultProfile.linux": "bash"\n\
-    }' > /opt/collabcode-defaults/settings.json
+# Create workspace dir early — the extension installer writes to $HOME/.openvscode-server/extensions
+RUN mkdir -p /home/workspace && chmod 777 /home/workspace
 
-# Create entrypoint script to bootstrap settings
-RUN echo '#!/bin/bash\n\
-    \n\
-    # Bootstrap Workspace Settings\n\
-    mkdir -p /home/workspace/.vscode\n\
-    cp -f /opt/collabcode-defaults/settings.json /home/workspace/.vscode/settings.json\n\
-    \n\
-    # Bootstrap User/Machine Settings (if data dir is in workspace)\n\
-    mkdir -p /home/workspace/.openvscode-server/User\n\
-    mkdir -p /home/workspace/.openvscode-server/Machine\n\
-    cp -f /opt/collabcode-defaults/settings.json /home/workspace/.openvscode-server/User/settings.json\n\
-    cp -f /opt/collabcode-defaults/settings.json /home/workspace/.openvscode-server/Machine/settings.json\n\
-    \n\
-    # Fix permissions (assuming running as root, ownership might be needed if switching user)\n\
-    # But we are root in this container, so it is fine.\n\
-    \n\
-    exec "$@"\n\
-    ' > /usr/local/bin/entrypoint.sh \
-    && chmod +x /usr/local/bin/entrypoint.sh
-
-# Ensure properly configured shell environment
-RUN echo 'if [ -d "/home/workspace" ]; then cd /home/workspace; fi' >> /etc/bash.bashrc && \
-    echo 'if [ -d "/home/workspace" ]; then cd /home/workspace; fi' >> /root/.bashrc
-
-WORKDIR /home/workspace
-
-EXPOSE 3000
-
+# ── Extensions (heavy — kept high for cache efficiency) ────────────────────────
+# If only scripts/settings change on rebuild, this expensive layer is served from cache.
 SHELL ["/bin/bash", "-c"]
 RUN \
-    # Create a tmp dir for upgrading
-    mkdir -p /tmp/exts && cd /tmp/exts && \
-    # List the extensions
-    exts=(\
-    # Universal
+    exts=( \
     gitpod.gitpod-theme \
     pkief.material-icon-theme \
     eamodio.gitlens \
     usernamehw.errorlens \
     oderwat.indent-rainbow \
-    # Node.js
     dbaeumer.vscode-eslint \
     esbenp.prettier-vscode \
     christian-kohler.npm-intellisense \
     christian-kohler.path-intellisense \
-    # React & HTML/CSS
     dsznajder.es7-react-js-snippets \
     bradlc.vscode-tailwindcss \
     formulahendry.auto-rename-tag \
     ritwickdey.LiveServer \
     ecmel.vscode-html-css \
-    )\
-    # Install the extensions
+    ) \
     && for ext in "${exts[@]}"; do ${OPENVSCODE} --install-extension "${ext}"; done
 
-WORKDIR /home/workspace
-ENTRYPOINT ["/usr/local/bin/entrypoint.sh", "/opt/code-server/bin/openvscode-server", "--host", "0.0.0.0", "--port", "3000", "--server-data-dir", "/home/workspace/.openvscode-server", "--user-data-dir", "/home/workspace/.openvscode-server", "/home/workspace"]
+# ── Workspace & VS Code settings ───────────────────────────────────────────────
+RUN mkdir -p /opt/collabcode-defaults && \
+    echo '{"files.autoSave":"afterDelay","files.autoSaveDelay":500,"workbench.colorTheme":"Default Dark Modern","editor.formatOnPaste":true,"editor.mouseWheelZoom":true,"editor.wordWrap":"on","editor.aiStats.enabled":false,"editor.autoIndentOnPaste":true,"editor.cursorSmoothCaretAnimation":"on","workbench.secondarySideBar.defaultVisibility":"hidden","workbench.iconTheme":"vs-seti","workbench.statusBar.visible":true,"workbench.view.alwaysShowHeaderActions":true,"window.autoDetectColorScheme":false,"chat.agent.enabled":false,"terminal.integrated.middleClickBehavior":"paste","window.menuBarVisibility":"visible","terminal.integrated.cwd":"/home/workspace","terminal.integrated.defaultProfile.linux":"bash","remote.autoForwardPorts":true,"remote.autoForwardPortsSource":"hybrid","remote.localPortHost":"localhost","remote.forwardedPorts.useLocalhost":false,"terminal.integrated.links.localPortHost":"localhost","remote.restoreForwardedPorts":true}' \
+    > /opt/collabcode-defaults/settings.json
 
+# ── Entrypoint & show-url scripts ─────────────────────────────────────────────
+COPY entrypoint.sh /usr/local/bin/entrypoint.sh
+COPY show-url.sh /usr/local/bin/show-url
+RUN chmod +x /usr/local/bin/entrypoint.sh /usr/local/bin/show-url
+
+# ── Shell environment ────────────────────────────────────────────────────────
+RUN echo 'if [ -d "/home/workspace" ]; then cd /home/workspace; fi' >> /etc/bash.bashrc && \
+    echo 'if [ -d "/home/workspace" ]; then cd /home/workspace; fi' >> /root/.bashrc && \
+    echo 'show-url' >> /etc/bash.bashrc && \
+    echo 'show-url' >> /root/.bashrc
+
+# ── Terminal Proxy Fixer Extension ───────────────────────────────────────────
+COPY extensions/terminal-proxy-fixer /opt/terminal-proxy-fixer
+
+WORKDIR /home/workspace
+EXPOSE 3000 3001 3002 3003 3004 3005 3006 3007 3008 3009 3010
+ENTRYPOINT ["/usr/local/bin/entrypoint.sh"]

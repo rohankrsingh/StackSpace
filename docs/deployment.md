@@ -1,6 +1,6 @@
-# CollabCode Deployment Guide
+# StackSpace Deployment Guide
 
-This guide covers deploying CollabCode to production using Vercel and AWS.
+This guide covers deploying StackSpace to production using Vercel and AWS.
 
 ## Architecture Overview
 
@@ -24,10 +24,7 @@ This guide covers deploying CollabCode to production using Vercel and AWS.
 No `ORCHESTRATOR_URL` set - uses local Docker.
 
 ```bash
-# Start development server
 npm run dev
-
-# API routes will use local Docker commands
 ```
 
 ### 2. Production (Vercel + AWS)
@@ -35,7 +32,7 @@ npm run dev
 Set `ORCHESTRATOR_URL` to your AWS orchestrator endpoint.
 
 ```bash
-ORCHESTRATOR_URL=https://orchestrator.collabcode.io
+ORCHESTRATOR_URL=https://orchestrator.stackspace.io
 ```
 
 ## Phase 1: Deploy to Vercel
@@ -51,7 +48,7 @@ ORCHESTRATOR_URL=https://orchestrator.collabcode.io
 1. **Push to GitHub**
    ```bash
    git init
-   git remote add origin https://github.com/your-username/collabcode.git
+   git remote add origin https://github.com/your-username/stackspace.git
    git push -u origin main
    ```
 
@@ -81,9 +78,9 @@ While `ORCHESTRATOR_URL` is empty:
 
 Set up mock responses or proceed to Phase 4 for the orchestrator.
 
-## API Routes Updated
+## API Routes
 
-The following routes now use the orchestrator abstraction:
+The following routes use the orchestrator abstraction:
 
 | Route | Mode Decision |
 |-------|---------------|

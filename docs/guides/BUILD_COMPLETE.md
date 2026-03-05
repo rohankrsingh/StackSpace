@@ -1,15 +1,15 @@
-# 🎉 CollabCode MVP - BUILD COMPLETE REPORT
+# 🎉 StackSpace MVP - BUILD COMPLETE REPORT
 
 **Build Date:** January 17, 2026  
 **Build Time:** ~2 hours  
 **Status:** ✅ COMPLETE AND VERIFIED  
-**Project Location:** `/home/rohan/Documents/collabcode`
+**Project Location:** `/home/rohan/Documents/stackspace`
 
 ---
 
 ## 📊 Executive Summary
 
-**CollabCode MVP** is a fully functional collaborative VS Code web IDE built with modern web technologies. All requirements have been met:
+**StackSpace MVP** is a fully functional collaborative VS Code web IDE built with modern web technologies. All requirements have been met:
 
 ✅ All 3 pages built and working  
 ✅ All UI libraries integrated and actively used  
@@ -288,8 +288,8 @@ cd apps/socket-server && npm run dev
 ```
 NEXT_PUBLIC_SOCKET_URL=http://localhost:3001
 NEXT_PUBLIC_APPWRITE_ENDPOINT=http://localhost/v1
-NEXT_PUBLIC_APPWRITE_PROJECT_ID=collabcode
-NEXT_PUBLIC_APPWRITE_DB_ID=collabcode_db
+NEXT_PUBLIC_APPWRITE_PROJECT_ID=stackspace
+NEXT_PUBLIC_APPWRITE_DB_ID=stackspace_db
 NEXT_PUBLIC_APPWRITE_ROOMS_COLLECTION_ID=rooms
 ```
 
@@ -447,7 +447,7 @@ By building this MVP, you have:
 
 ## 🎉 CONCLUSION
 
-**CollabCode MVP is COMPLETE and READY for use.**
+**StackSpace MVP is COMPLETE and READY for use.**
 
 All mandatory requirements have been fulfilled. The application is functional, well-documented, and ready for:
 - ✅ Testing and verification
@@ -480,4 +480,4 @@ All mandatory requirements have been fulfilled. The application is functional, w
 
 ---
 
-**Thank you for using CollabCode! 🚀**
+**Thank you for using StackSpace! 🚀**

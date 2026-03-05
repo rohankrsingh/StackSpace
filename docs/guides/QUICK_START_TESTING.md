@@ -1,10 +1,10 @@
-# CollabCode - Quick Start & Testing Guide
+# StackSpace - Quick Start & Testing Guide
 
 ## Running the Application
 
 ### Start Development Servers
 ```bash
-cd /home/rohan/Documents/collabcode
+cd /home/rohan/Documents/stackspace
 npm run dev
 ```
 
@@ -211,7 +211,7 @@ npm run dev:socket
 docker ps
 
 # View specific room workspace
-ls -la /home/rohan/Documents/collabcode/workspaces/<roomId>
+ls -la /home/rohan/Documents/stackspace/workspaces/<roomId>
 
 # Check Docker logs
 docker logs <container_id>
@@ -259,8 +259,8 @@ npm run build
 npm run start
 
 # Or use Docker
-docker build -t collabcode .
-docker run -p 3000:3000 -e APPWRITE_ENDPOINT=... collabcode
+docker build -t stackspace .
+docker run -p 3000:3000 -e APPWRITE_ENDPOINT=... stackspace
 ```
 
 ## Support & Resources

@@ -1,4 +1,4 @@
-# CollabCode
+# StackSpace
 
 A real-time collaborative coding platform with cloud-based IDE, whiteboard, and chat features.
 
@@ -34,8 +34,8 @@ A real-time collaborative coding platform with cloud-based IDE, whiteboard, and 
 
 ```bash
 # Clone the repository
-git clone https://github.com/your-username/collabcode.git
-cd collabcode
+git clone https://github.com/your-username/stackspace.git
+cd stackspace
 
 # Install dependencies
 npm install
@@ -55,7 +55,7 @@ See `apps/web/.env.example` for all required variables.
 ## Project Structure
 
 ```
-collabcode/
+stackspace/
 ├── apps/
 │   ├── web/              # Next.js frontend + API
 │   └── socket-server/    # Socket.IO realtime server

@@ -1,4 +1,4 @@
-# CollabCode API Reference
+# StackSpace API Reference
 
 ## Room Management APIs
 
@@ -272,7 +272,7 @@ socket.on('chat:new', (data) => {
 // Step 4: Send a message
 socket.emit('chat:send', {
   roomId,
-  message: 'Hello from CollabCode!',
+  message: 'Hello from StackSpace!',
   user
 });
 
@@ -324,7 +324,7 @@ Currently no rate limiting. For production:
 Room metadata can be stored in Appwrite:
 
 ```
-Database: collabcode_db
+Database: stackspace_db
 Collection: rooms
 
 Fields:
@@ -366,4 +366,4 @@ NEXT_PUBLIC_APPWRITE_PROJECT_ID=your-project-id
 
 ---
 
-Built with ❤️ | CollabCode MVP
+Built with ❤️ | StackSpace MVP

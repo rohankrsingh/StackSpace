@@ -1,7 +1,7 @@
 <!-- README INDEX -->
-# 📚 CollabCode MVP - Documentation Index
+# 📚 StackSpace MVP - Documentation Index
 
-Welcome to **CollabCode** - a working Minimum Viable Product of a collaborative VS Code web IDE!
+Welcome to **StackSpace** - a working Minimum Viable Product of a collaborative VS Code web IDE!
 
 ## 📖 Documentation Files (Read in Order)
 
@@ -91,14 +91,14 @@ Bash script with:
 
 **Terminal 1 - Frontend:**
 ```bash
-cd /home/rohan/Documents/collabcode/apps/web
+cd /home/rohan/Documents/stackspace/apps/web
 npm run dev
 ```
 → Visit http://localhost:3000
 
 **Terminal 2 - Socket.IO Server:**
 ```bash
-cd /home/rohan/Documents/collabcode/apps/socket-server
+cd /home/rohan/Documents/stackspace/apps/socket-server
 npm run dev
 ```
 → Server on http://localhost:3001
@@ -114,7 +114,7 @@ npm run dev
 ## 📁 Project Structure
 
 ```
-/home/rohan/Documents/collabcode/
+/home/rohan/Documents/stackspace/
 ├── apps/
 │   ├── web/              # Next.js Frontend (port 3000)
 │   └── socket-server/    # Socket.IO Server (port 3001)
@@ -191,7 +191,7 @@ npm run dev
 
 ```bash
 # Navigate to project
-cd /home/rohan/Documents/collabcode
+cd /home/rohan/Documents/stackspace
 
 # Start frontend
 cd apps/web && npm run dev

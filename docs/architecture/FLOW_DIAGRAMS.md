@@ -1,4 +1,4 @@
-# CollabCode - Complete Flow Diagrams
+# StackSpace - Complete Flow Diagrams
 
 ## 1. Authentication & Room Access Flow
 
@@ -576,4 +576,4 @@ Frontend error handling
 
 ---
 
-These diagrams show the complete flow of authentication, authorization, state management, and error handling throughout the CollabCode platform.
+These diagrams show the complete flow of authentication, authorization, state management, and error handling throughout the StackSpace platform.
