@@ -1,4 +1,4 @@
-import { Client, Account, ID, Databases } from "appwrite";
+import { Client, Account, ID, Databases, Storage } from "appwrite";
 
 export const client = new Client()
   .setEndpoint(process.env.NEXT_PUBLIC_APPWRITE_ENDPOINT || "https://fra.cloud.appwrite.io/v1")
@@ -6,6 +6,7 @@ export const client = new Client()
 
 export const account = new Account(client);
 export const databases = new Databases(client);
+export const storage = new Storage(client);
 
 export async function createAccount(email: string, password: string, name: string) {
   try {

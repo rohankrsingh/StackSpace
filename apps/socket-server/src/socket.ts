@@ -12,7 +12,7 @@ export function initializeSocket(io: Server): void {
         socket.on("join-room", (data: any) => {
             const roomId = typeof data === "string" ? data : data.roomId;
             const user = typeof data === "string" ? null : data.user;
-            
+
             console.log(`Socket ${socket.id} joined room ${roomId}`, user ? `as ${user.name}` : "");
             socket.join(roomId);
 
@@ -76,9 +76,9 @@ export function initializeSocket(io: Server): void {
         });
 
         // Handle chat messages
-        socket.on("send-chat-message", (data: { roomId: string; userId: string; username: string; message: string }) => {
-            const { roomId, userId, username, message } = data;
-            console.log(`Chat in ${roomId}: ${username}: ${message}`);
+        socket.on("send-chat-message", (data: { roomId: string; userId: string; username: string; message: string; fileId?: string; fileType?: string; fileName?: string }) => {
+            const { roomId, userId, username, message, fileId, fileType, fileName } = data;
+            console.log(`Chat in ${roomId}: ${username}: ${message}${fileId ? " [Attachment]" : ""}`);
 
             const chatMessage = {
                 id: `${Date.now()}-${Math.random()}`,
@@ -86,6 +86,9 @@ export function initializeSocket(io: Server): void {
                 username,
                 message,
                 sentAt: new Date().toISOString(),
+                fileId,
+                fileType,
+                fileName,
             };
 
             // Broadcast to all clients in the room (including sender for confirmation)

@@ -17,6 +17,9 @@ export interface ChatMessage {
   user: User;
   message: string;
   ts: string;
+  fileId?: string;
+  fileType?: string;
+  fileName?: string;
 }
 
 export interface Activity {

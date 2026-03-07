@@ -1,9 +1,10 @@
 import { ID, Query } from "appwrite";
-import { client, databases } from "./auth";
+import { client, databases, storage } from "./auth";
 
 const DATABASE_ID = process.env.NEXT_PUBLIC_APPWRITE_DB_ID || process.env.NEXT_PUBLIC_APPWRITE_DATABASE_ID || "database_id";
 const MESSAGES_COLLECTION_ID = "chat_messages";
 const ACTIVITIES_COLLECTION_ID = "activity_logs";
+const BUCKET_ID = process.env.NEXT_PUBLIC_APPWRITE_BUCKET_ID || "696c7e8b0009e7588dce";
 
 export interface Message {
     $id: string;
@@ -12,6 +13,9 @@ export interface Message {
     username: string;
     message: string;
     sentAt: string;
+    fileId?: string;
+    fileType?: string;
+    fileName?: string;
 }
 
 export interface Activity {
@@ -26,7 +30,7 @@ export interface Activity {
 }
 
 export const ChatService = {
-    async sendMessage(roomId: string, userId: string, username: string, message: string) {
+    async sendMessage(roomId: string, userId: string, username: string, message: string, fileData?: { fileId: string, fileType: string, fileName: string }) {
         return databases.createDocument(
             DATABASE_ID,
             MESSAGES_COLLECTION_ID,
@@ -36,9 +40,30 @@ export const ChatService = {
                 userId,
                 username,
                 message,
-                sentAt: new Date().toISOString()
+                sentAt: new Date().toISOString(),
+                ...fileData
             }
         );
+    },
+
+    async uploadFile(file: File) {
+        return storage.createFile(
+            BUCKET_ID,
+            ID.unique(),
+            file
+        );
+    },
+
+    getFilePreview(fileId: string) {
+        return storage.getFilePreview(BUCKET_ID, fileId);
+    },
+
+    getFileView(fileId: string) {
+        return storage.getFileView(BUCKET_ID, fileId);
+    },
+
+    getFileDownload(fileId: string) {
+        return storage.getFileDownload(BUCKET_ID, fileId);
     },
 
     async getMessages(roomId: string) {

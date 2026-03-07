@@ -66,6 +66,17 @@ const nextConfig: NextConfig = {
       },
     ];
   },
+
+  async rewrites() {
+    return [
+      {
+        // Proxy Socket.io polling requests to the ECS server
+        // This avoids Mixed Content blocks in the browser
+        source: "/socket.io/:path*",
+        destination: `http://${process.env.SOCKET_SERVER_IP || "13.235.70.235"}:3001/socket.io/:path*`,
+      },
+    ];
+  },
 };
 
 export default nextConfig;

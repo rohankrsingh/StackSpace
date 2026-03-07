@@ -22,4 +22,7 @@ export interface ChatMessage {
     message: string;
     user: User;
     ts: string;
+    fileId?: string;
+    fileType?: string;
+    fileName?: string;
 }

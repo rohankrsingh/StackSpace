@@ -7,7 +7,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Input } from "@/components/ui/input";
-import { LayoutGrid, Users, MessageSquare, Activity, Loader2, Power, LogOut, Code, Edit3, Maximize2, Layout, FilePlus, FileText, Trash2, Clock, Keyboard, Loader } from "lucide-react";
+import { LayoutGrid, Users, MessageSquare, Activity, Loader2, Power, LogOut, Code, Edit3, Maximize2, Layout, FilePlus, FileText, Trash2, Clock, Keyboard, Loader, FileIcon, Download, ImageIcon, ExternalLink } from "lucide-react";
 import { motion, AnimatePresence } from "motion/react";
 import LoaderKokonut from "@/components/kokonutui/loader";
 import { MultiStepLoader } from "@/components/ui/multi-step-loader";
@@ -44,7 +44,8 @@ import { ChevronDown } from "lucide-react";
 import { Separator } from "@/components/ui/separator";
 import { useKeyboardShortcuts, Shortcut } from "@/hooks/useKeyboardShortcuts";
 import { ShortcutsDialog } from "@/components/room/ShortcutsDialog";
-import { ChatInput, ChatInputTextArea, ChatInputSubmit } from "@/components/ui/chat-input";
+import { ChatInput, ChatInputTextArea, ChatInputSubmit, ChatInputFile } from "@/components/ui/chat-input";
+import { FileAttachmentPreview } from "@/components/room/FileAttachmentPreview";
 
 interface RoomStatus {
   roomId: string;
@@ -72,6 +73,8 @@ export default function RoomPage() {
   const [chatMessage, setChatMessage] = useState("");
   const [onlineUsers, setOnlineUsers] = useState<User[]>([]);
   const [currentUser, setCurrentUser] = useState<User | null>(null);
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [isUploading, setIsUploading] = useState(false);
 
   const chatMessages = useSelector((state: RootState) => state.chat.messages);
   const unreadCount = useSelector((state: RootState) => state.chat.unreadCount);
@@ -209,7 +212,10 @@ export default function RoomPage() {
             id: doc.$id,
             user: { id: doc.userId, name: doc.username },
             message: doc.message,
-            ts: doc.sentAt
+            ts: doc.sentAt,
+            fileId: doc.fileId,
+            fileType: doc.fileType,
+            fileName: doc.fileName
           }));
         });
 
@@ -242,7 +248,7 @@ export default function RoomPage() {
   }, [roomId]);
 
   const handleSendMessage = async () => {
-    if (!chatMessage.trim()) return;
+    if (!chatMessage.trim() && !selectedFile) return;
 
     if (!currentUser || !currentUser.id || !currentUser.name) {
       console.error("Cannot send message: user not authenticated");
@@ -250,13 +256,27 @@ export default function RoomPage() {
     }
 
     try {
+      let fileData = undefined;
+
+      if (selectedFile) {
+        setIsUploading(true);
+        const uploadedFile = await ChatService.uploadFile(selectedFile);
+        fileData = {
+          fileId: uploadedFile.$id,
+          fileType: selectedFile.type,
+          fileName: selectedFile.name
+        };
+      }
+
       await ChatService.sendMessage(
         roomId,
         currentUser.id,
         currentUser.name,
-        chatMessage
+        chatMessage,
+        fileData
       );
       setChatMessage("");
+      setSelectedFile(null);
 
       // Emit via Socket.IO for instant update
       // const socket = getSocket(roomId);
@@ -268,6 +288,8 @@ export default function RoomPage() {
       // });
     } catch (error) {
       console.error("Failed to send message:", error);
+    } finally {
+      setIsUploading(false);
     }
   };
 
@@ -462,7 +484,8 @@ export default function RoomPage() {
 function RoomContent({
   roomId, roomStatus, users, chatMessages, activities,
   chatMessage, setChatMessage, handleSendMessage,
-  handleCopyLink, handleStartRoom, handleStopRoom, handleLeaveRoom, loading
+  handleCopyLink, handleStartRoom, handleStopRoom, handleLeaveRoom, loading,
+  selectedFile, setSelectedFile, isUploading
 }: any) {
   const [activeView, setActiveView] = useState<"ide" | "whiteboard">("ide");
   const [isDockVisible, setIsDockVisible] = useState(false);
@@ -498,7 +521,10 @@ function RoomContent({
         id: payload.$id,
         user: { id: payload.userId, name: payload.username },
         message: payload.message,
-        ts: payload.sentAt
+        ts: payload.sentAt,
+        fileId: payload.fileId,
+        fileType: payload.fileType,
+        fileName: payload.fileName
       }));
 
       // Show notification if it's not our message and chat is not visible
@@ -911,6 +937,50 @@ function RoomContent({
                                 <p className="text-xs text-foreground/90 leading-relaxed whitespace-pre-wrap wrap-anywhere">
                                   {msg.message}
                                 </p>
+
+                                {msg.fileId && (
+                                  <div className="mt-2 rounded-lg overflow-hidden border border-border bg-background/50">
+                                    {msg.fileType?.startsWith("image/") ? (
+                                      <div className="group relative">
+                                        <img
+                                          src={ChatService.getFilePreview(msg.fileId)}
+                                          alt={msg.fileName}
+                                          className="max-w-full h-auto cursor-pointer hover:opacity-90 transition-opacity"
+                                          onClick={() => window.open(ChatService.getFileView(msg.fileId), '_blank')}
+                                        />
+                                        <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2">
+                                          <Button size="icon" variant="secondary" className="h-8 w-8 rounded-full" onClick={() => window.open(ChatService.getFileView(msg.fileId), '_blank')}>
+                                            <ExternalLink className="h-4 w-4" />
+                                          </Button>
+                                          <Button size="icon" variant="secondary" className="h-8 w-8 rounded-full" asChild>
+                                            <a href={ChatService.getFileDownload(msg.fileId)} download>
+                                              <Download className="h-4 w-4" />
+                                            </a>
+                                          </Button>
+                                        </div>
+                                      </div>
+                                    ) : (
+                                      <div className="p-2 flex items-center gap-3">
+                                        <div className="h-10 w-10 shrink-0 rounded bg-muted flex items-center justify-center">
+                                          {msg.fileType === "application/pdf" ? (
+                                            <FileText className="h-5 w-5 text-red-500" />
+                                          ) : (
+                                            <FileIcon className="h-5 w-5 text-muted-foreground" />
+                                          )}
+                                        </div>
+                                        <div className="flex-1 min-w-0">
+                                          <p className="text-[11px] font-medium truncate">{msg.fileName}</p>
+                                          <p className="text-[10px] text-muted-foreground uppercase">{msg.fileType?.split('/').pop()}</p>
+                                        </div>
+                                        <Button size="icon" variant="ghost" className="h-8 w-8 rounded-full" asChild>
+                                          <a href={ChatService.getFileDownload(msg.fileId)} download>
+                                            <Download className="h-4 w-4" />
+                                          </a>
+                                        </Button>
+                                      </div>
+                                    )}
+                                  </div>
+                                )}
                               </div>
                             </div>
                           </div>
@@ -918,17 +988,29 @@ function RoomContent({
                       )}
                     </div>
                     <div className="pt-3 border-t border-border">
+                      {selectedFile && (
+                        <FileAttachmentPreview
+                          file={selectedFile}
+                          onRemove={() => setSelectedFile(null)}
+                        />
+                      )}
                       <ChatInput
                         value={chatMessage}
                         onChange={(e) => setChatMessage(e.target.value)}
                         onSubmit={handleSendMessage}
+                        onFileSelect={setSelectedFile}
                         className=" border-border h-full w-full"
                         variant="default"
+                        loading={isUploading}
+                        hasFile={!!selectedFile}
                       >
                         <ChatInputTextArea
                           placeholder="Type a message..."
                         />
-                        <ChatInputSubmit className="!p-2 !px-2 rounded-full bg-primary hover:bg-primary/90 text-primary-foreground" />
+                        <div className="flex items-center justify-between w-full mt-1">
+                          <ChatInputFile />
+                          <ChatInputSubmit className="p-2! px-2! rounded-full bg-primary hover:bg-primary/90 text-primary-foreground" />
+                        </div>
                       </ChatInput>
                     </div>
                   </TabsContent>
@@ -993,7 +1075,7 @@ function RoomContent({
                           return (
                             <div key={a.id} className={`rounded-lg p-2 border transition-all ${getActivityColor(a.type)}`}>
                               <div className="flex items-start gap-2">
-                                <div className="mt-0.5 flex-shrink-0">
+                                <div className="mt-0.5 shrink-0">
                                   {getActivityIcon(a.type)}
                                 </div>
                                 <div className="flex-1 min-w-0">

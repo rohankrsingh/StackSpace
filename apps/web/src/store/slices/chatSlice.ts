@@ -5,6 +5,9 @@ interface ChatMessage {
   user: { id: string; name: string };
   message: string;
   ts: string;
+  fileId?: string;
+  fileType?: string;
+  fileName?: string;
 }
 
 interface ChatState {
