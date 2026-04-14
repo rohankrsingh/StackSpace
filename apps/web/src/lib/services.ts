@@ -54,16 +54,18 @@ export const ChatService = {
         );
     },
 
-    getFilePreview(fileId: string) {
-        return storage.getFilePreview(BUCKET_ID, fileId);
+    getFilePreview(fileId: string): string {
+        // Appwrite free tier blocks getFilePreview (image transformations).
+        // Standard getFileView returns the image cleanly without crashing.
+        return storage.getFileView(BUCKET_ID, fileId).toString();
     },
 
-    getFileView(fileId: string) {
-        return storage.getFileView(BUCKET_ID, fileId);
+    getFileView(fileId: string): string {
+        return storage.getFileView(BUCKET_ID, fileId).toString();
     },
 
-    getFileDownload(fileId: string) {
-        return storage.getFileDownload(BUCKET_ID, fileId);
+    getFileDownload(fileId: string): string {
+        return storage.getFileDownload(BUCKET_ID, fileId).toString();
     },
 
     async getMessages(roomId: string) {

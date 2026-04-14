@@ -212,7 +212,8 @@ export async function ecsRunTask(
 
     // Wait for RUNNING state and extract public IP
     const publicIp = await waitForTaskRunning(task.taskArn);
-    const ideUrl = `http://${publicIp}:3000`;
+    const secureIps = publicIp.replace(/\./g, "-");
+    const ideUrl = `https://ip-${secureIps}.stackspace.live`;
 
     console.log(`[ECS] Task running: ${task.taskArn} → ${ideUrl}`);
     return { taskArn: task.taskArn, publicIp, ideUrl };
@@ -260,10 +261,11 @@ export async function ecsGetTaskStatus(
 
         const running = task.lastStatus === "RUNNING";
         const publicIp = running ? await extractPublicIp(task) : null;
+        const secureIps = publicIp ? publicIp.replace(/\./g, "-") : "";
         return {
             running,
             publicIp,
-            ideUrl: publicIp ? `http://${publicIp}:3000` : null,
+            ideUrl: publicIp ? `https://ip-${secureIps}.stackspace.live` : null,
         };
     } catch (e) {
         console.error(`[ECS] DescribeTasks error for ${taskArn}:`, e);

@@ -10,7 +10,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 
 # ── OpenVSCode Server ──────────────────────────────────────────────────────────
 RUN mkdir -p /opt/code-server && \
-    curl -fsSL https://github.com/gitpod-io/openvscode-server/releases/download/openvscode-server-v1.106.3/openvscode-server-v1.106.3-linux-x64.tar.gz | \
+    curl -fsSL https://github.com/gitpod-io/openvscode-server/releases/download/openvscode-server-v1.109.5/openvscode-server-v1.109.5-linux-x64.tar.gz | \
     tar -xz --strip-components=1 -C /opt/code-server
 
 # Set env vars early — needed by extension installer below

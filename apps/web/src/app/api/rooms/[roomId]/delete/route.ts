@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createSessionClient } from "@/lib/server-auth";
 import { orchestratorRemoveRoom, isProductionMode } from "@/lib/orchestrator";
+import { getOrCreateRoomAccessPoint, deleteRoomAccessPoint } from "@/lib/efs";
 import { deleteWorkspace } from "@/lib/workspaces";
 import {
     getRoomByRoomId,
@@ -55,11 +56,22 @@ export async function DELETE(
             // Continue cleanup even if container removal has issues
         }
 
-        // B. Delete Workspace files
+        // B. Delete workspace data & EFS access point
         try {
-            deleteWorkspace(roomId);
+            if (isProductionMode() && process.env.EFS_FILE_SYSTEM_ID) {
+                // Fetch the existing access point ID by idempotently calling create with the exact same config
+                console.log(`[DeleteRoom] Resolving Access Point ID for room: ${roomId}`);
+                const efsFileSystemId = process.env.EFS_FILE_SYSTEM_ID;
+                const accessPointId = await getOrCreateRoomAccessPoint(roomId, efsFileSystemId);
+                if (accessPointId) {
+                    await deleteRoomAccessPoint(accessPointId);
+                }
+            } else {
+                // Only delete the local workspace directory if we are not in AWS EFS mode
+                deleteWorkspace(roomId);
+            }
         } catch (e) {
-            console.error(`Warning: Workspace deletion failed: ${e}`);
+            console.error(`Warning: Workspace/EFS cleanup failed: ${e}`);
         }
 
         // C. Delete all related data (cascade delete)

@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useEffect, useCallback } from "react";
+import Image from "next/image";
 import { useParams, useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -272,20 +273,23 @@ export default function RoomPage() {
         roomId,
         currentUser.id,
         currentUser.name,
-        chatMessage,
+        chatMessage || (selectedFile ? "📎 Attachment" : ""),
         fileData
       );
+      // Log activity
+      if (selectedFile) {
+        await ActivityService.logActivity(
+          roomId,
+          currentUser.id,
+          currentUser.name,
+          'created',
+          selectedFile.name
+        );
+      }
+
       setChatMessage("");
       setSelectedFile(null);
-
-      // Emit via Socket.IO for instant update
-      // const socket = getSocket(roomId);
-      // socket.emit("send-chat-message", {
-      //   roomId,
-      //   userId: currentUser.id,
-      //   username: currentUser.name,
-      //   message: chatMessage
-      // });
+      // Using Appwrite Realtime instead of Socket.IO to prevent duplicates
     } catch (error) {
       console.error("Failed to send message:", error);
     } finally {
@@ -448,6 +452,19 @@ export default function RoomPage() {
     );
   }
 
+  const getReadableFileType = (type: string) => {
+    if (!type) return "FILE";
+    if (type.includes("wordprocessingml") || type.includes("msword")) return "DOCX";
+    if (type.includes("spreadsheetml") || type.includes("excel")) return "XLSX";
+    if (type.includes("presentationml") || type.includes("powerpoint")) return "PPTX";
+    if (type === "application/pdf") return "PDF";
+    if (type.includes("text/")) return type.split('/')[1].toUpperCase();
+    if (type.includes("image/")) return type.split('/')[1].toUpperCase();
+    if (type.includes("video/")) return "VIDEO";
+    if (type.includes("audio/")) return "AUDIO";
+    return type.split('/')[1]?.toUpperCase() || "FILE";
+  };
+
   return (
     <ProtectedRoute>
       <MultiStepLoader
@@ -476,6 +493,10 @@ export default function RoomPage() {
         handleStopRoom={handleStopRoom}
         handleLeaveRoom={handleLeaveRoom}
         loading={loading}
+        selectedFile={selectedFile}
+        setSelectedFile={setSelectedFile}
+        isUploading={isUploading}
+        getReadableFileType={getReadableFileType}
       />
     </ProtectedRoute>
   );
@@ -485,7 +506,7 @@ function RoomContent({
   roomId, roomStatus, users, chatMessages, activities,
   chatMessage, setChatMessage, handleSendMessage,
   handleCopyLink, handleStartRoom, handleStopRoom, handleLeaveRoom, loading,
-  selectedFile, setSelectedFile, isUploading
+  selectedFile, setSelectedFile, isUploading, getReadableFileType
 }: any) {
   const [activeView, setActiveView] = useState<"ide" | "whiteboard">("ide");
   const [isDockVisible, setIsDockVisible] = useState(false);
@@ -504,6 +525,52 @@ function RoomContent({
       }
     }
     setIsDockVisible(false);
+  };
+
+  const handleFileDownload = async (e: React.MouseEvent, fileId: string, fileName: string, fileType?: string) => {
+    e.preventDefault();
+    console.log(`[Chat] Starting download for: ${fileName} (${fileId})`);
+
+    try {
+      const downloadUrl = ChatService.getFileDownload(fileId);
+
+      // We use credentials 'include' just in case, though usually not needed for these URLs
+      const response = await fetch(downloadUrl);
+      if (!response.ok) throw new Error(`Download failed with status: ${response.status}`);
+
+      const blob = await response.blob();
+
+      let type = fileType || response.headers.get("content-type") || "application/octet-stream";
+      // Force correct MIME mapping to prevent browser 'guesswork' renaming (.docx -> .zip)
+      if (fileName.toLowerCase().endsWith(".docx")) type = "application/vnd.openxmlformats-officedocument.wordprocessingml.document";
+      if (fileName.toLowerCase().endsWith(".xlsx")) type = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet";
+      if (fileName.toLowerCase().endsWith(".pptx")) type = "application/vnd.openxmlformats-officedocument.presentationml.presentation";
+      if (fileName.toLowerCase().endsWith(".pdf")) type = "application/pdf";
+
+      // Creating a File object instead of a raw Blob can help some browsers respect the name better
+      const file = new File([blob], fileName, { type });
+      const url = window.URL.createObjectURL(file);
+
+      const link = document.createElement("a");
+      link.href = url;
+      link.setAttribute("download", fileName);
+
+      // Append to DOM to ensure it works in all browsers
+      document.body.appendChild(link);
+      link.click();
+
+      console.log(`[Chat] Download triggered for: ${fileName}`);
+
+      // Cleanup
+      setTimeout(() => {
+        document.body.removeChild(link);
+        window.URL.revokeObjectURL(url);
+      }, 500);
+    } catch (error) {
+      console.error("[Chat] XHR Download failed, falling back to direct link:", error);
+      // Final Fallback: Direct download via assignment (Control of name is lost here unfortunately if browser is picky)
+      window.location.assign(ChatService.getFileDownload(fileId));
+    }
   };
 
   const dispatch = useDispatch<AppDispatch>();
@@ -717,8 +784,8 @@ function RoomContent({
           </div>
 
           {/* View: Whiteboard */}
-          <div className={`absolute inset-0 ${activeView === "whiteboard" ? "z-10" : "z-0 h-0 w-0 overflow-hidden"}`}>
-            <Whiteboard roomId={roomId} />
+          <div className={`absolute inset-0 ${activeView === "whiteboard" ? "z-10" : "z-0 hidden"}`}>
+            {activeView === "whiteboard" && <Whiteboard roomId={roomId} />}
           </div>
         </div>
 
@@ -939,44 +1006,60 @@ function RoomContent({
                                 </p>
 
                                 {msg.fileId && (
-                                  <div className="mt-2 rounded-lg overflow-hidden border border-border bg-background/50">
+                                  <div className="mt-2 rounded-xl overflow-hidden border border-border/80 bg-background/60 shadow-sm transition-all hover:bg-background/80 group/file">
                                     {msg.fileType?.startsWith("image/") ? (
-                                      <div className="group relative">
-                                        <img
+                                      <div className="relative">
+                                        <div className="absolute top-2 left-2 z-10">
+                                          <Badge variant="secondary" className="bg-background/80 backdrop-blur-md text-[10px] py-0 px-2 border-none">
+                                            IMAGE
+                                          </Badge>
+                                        </div>
+                                        <Image
                                           src={ChatService.getFilePreview(msg.fileId)}
                                           alt={msg.fileName}
-                                          className="max-w-full h-auto cursor-pointer hover:opacity-90 transition-opacity"
+                                          width={400}
+                                          height={300}
+                                          unoptimized
+                                          className="w-full h-auto max-h-[300px] object-contain cursor-pointer"
                                           onClick={() => window.open(ChatService.getFileView(msg.fileId), '_blank')}
                                         />
-                                        <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2">
-                                          <Button size="icon" variant="secondary" className="h-8 w-8 rounded-full" onClick={() => window.open(ChatService.getFileView(msg.fileId), '_blank')}>
-                                            <ExternalLink className="h-4 w-4" />
-                                          </Button>
-                                          <Button size="icon" variant="secondary" className="h-8 w-8 rounded-full" asChild>
-                                            <a href={ChatService.getFileDownload(msg.fileId)} download>
-                                              <Download className="h-4 w-4" />
-                                            </a>
-                                          </Button>
+                                        <div className="absolute bottom-0 left-0 right-0 p-2 bg-linear-to-t from-black/60 to-transparent opacity-0 group-hover/file:opacity-100 transition-opacity flex items-center justify-between">
+                                          <span className="text-[10px] text-white truncate px-1 max-w-[70%]">{msg.fileName}</span>
+                                          <div className="flex gap-1">
+                                            <Button size="icon" variant="secondary" className="h-6 w-6 rounded-md bg-white/20 hover:bg-white/40 border-none text-white" onClick={() => window.open(ChatService.getFileView(msg.fileId), '_blank')}>
+                                              <ExternalLink className="h-3 w-3" />
+                                            </Button>
+                                            <Button size="icon" variant="secondary" className="h-6 w-6 rounded-md bg-white/20 hover:bg-white/40 border-none text-white" onClick={(e) => handleFileDownload(e, msg.fileId, msg.fileName, msg.fileType)}>
+                                              <Download className="h-3 w-3" />
+                                            </Button>
+                                          </div>
                                         </div>
                                       </div>
                                     ) : (
-                                      <div className="p-2 flex items-center gap-3">
-                                        <div className="h-10 w-10 shrink-0 rounded bg-muted flex items-center justify-center">
-                                          {msg.fileType === "application/pdf" ? (
-                                            <FileText className="h-5 w-5 text-red-500" />
-                                          ) : (
-                                            <FileIcon className="h-5 w-5 text-muted-foreground" />
-                                          )}
-                                        </div>
-                                        <div className="flex-1 min-w-0">
-                                          <p className="text-[11px] font-medium truncate">{msg.fileName}</p>
-                                          <p className="text-[10px] text-muted-foreground uppercase">{msg.fileType?.split('/').pop()}</p>
-                                        </div>
-                                        <Button size="icon" variant="ghost" className="h-8 w-8 rounded-full" asChild>
-                                          <a href={ChatService.getFileDownload(msg.fileId)} download>
+                                      <div className="p-3">
+                                        <div className="flex items-center gap-3">
+                                          <div className="h-10 w-10 shrink-0 rounded-lg bg-muted flex items-center justify-center border border-border">
+                                            {msg.fileType === "application/pdf" ? (
+                                              <FileText className="h-5 w-5 text-red-500" />
+                                            ) : msg.fileType?.includes("docx") || msg.fileType?.includes("word") ? (
+                                              <FileIcon className="h-5 w-5 text-blue-500" />
+                                            ) : (
+                                              <FileIcon className="h-5 w-5 text-muted-foreground" />
+                                            )}
+                                          </div>
+                                          <div className="flex-1 min-w-0">
+                                            <div className="flex items-center gap-2 mb-0.5">
+                                              <p className="text-[12px] font-semibold truncate text-foreground/90 leading-none">{msg.fileName}</p>
+                                              <Badge variant="outline" className="text-[9px] h-4 py-0 px-1 font-bold text-muted-foreground/80 uppercase">
+                                                {getReadableFileType(msg.fileType)}
+                                              </Badge>
+                                            </div>
+                                            <p className="text-[10px] text-muted-foreground">Ready to download</p>
+                                          </div>
+                                          <Button size="icon" variant="outline" className="h-8 w-8 rounded-lg hover:bg-primary hover:text-primary-foreground border-border" onClick={(e) => handleFileDownload(e, msg.fileId, msg.fileName, msg.fileType)}>
                                             <Download className="h-4 w-4" />
-                                          </a>
-                                        </Button>
+                                          </Button>
+                                        </div>
                                       </div>
                                     )}
                                   </div>

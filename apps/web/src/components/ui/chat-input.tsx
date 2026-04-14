@@ -219,11 +219,6 @@ function ChatInputFile({
 }: ChatInputFileProps) {
     const context = useContext(ChatInputContext);
     const onFileSelect = onFileSelectProp ?? context.onFileSelect;
-    const fileInputRef = useRef<HTMLInputElement>(null);
-
-    const handleClick = () => {
-        fileInputRef.current?.click();
-    };
 
     const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const file = e.target.files?.[0];
@@ -235,25 +230,25 @@ function ChatInputFile({
     };
 
     return (
-        <>
-            <input
-                type="file"
-                ref={fileInputRef}
-                onChange={handleFileChange}
-                className="hidden"
-                accept="image/*,.pdf,.doc,.docx,.txt"
-            />
+        <div className="relative inline-flex items-center justify-center">
             <Button
                 variant="ghost"
                 size="icon"
-                className={cn("h-8 w-8 rounded-full", className)}
-                onClick={handleClick}
+                className={cn("h-8 w-8 rounded-full pointer-events-none", className)}
                 type="button"
+                tabIndex={-1}
                 {...props}
             >
                 <PaperclipIcon className="h-4 w-4" />
             </Button>
-        </>
+            <input
+                type="file"
+                onChange={handleFileChange}
+                className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+                accept="image/*,.pdf,.doc,.docx,.txt"
+                title="Attach a file"
+            />
+        </div>
     );
 }
 

@@ -2,6 +2,7 @@
 
 import { X, FileIcon, ImageIcon, FileTextIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import Image from "next/image";
 
 interface FileAttachmentPreviewProps {
     file: File;
@@ -14,9 +15,9 @@ export function FileAttachmentPreview({ file, onRemove }: FileAttachmentPreviewP
 
     return (
         <div className="flex items-center gap-3 p-2 mb-2 rounded-lg bg-muted/50 border border-border group relative">
-            <div className="flex items-center justify-center w-10 h-10 rounded bg-background border border-border shrink-0 overflow-hidden">
+            <div className="flex items-center justify-center w-10 h-10 rounded bg-background border border-border shrink-0 overflow-hidden relative">
                 {isImage && previewUrl ? (
-                    <img src={previewUrl} alt="Preview" className="w-full h-full object-cover" />
+                    <Image src={previewUrl} alt="Preview" fill unoptimized className="object-cover" />
                 ) : file.type === "application/pdf" ? (
                     <FileTextIcon className="w-5 h-5 text-red-500" />
                 ) : (
