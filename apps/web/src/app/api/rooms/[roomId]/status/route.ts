@@ -13,7 +13,7 @@ export async function GET(
     let room;
     try {
       room = await getRoomByRoomId(roomId);
-    } catch (error) {
+    } catch {
       console.error(`✗ Room not found: ${roomId}`);
       return NextResponse.json({ error: "Room not found" }, { status: 404 });
     }
@@ -47,6 +47,7 @@ export async function GET(
         status: room.status,
         ideUrl: liveIdeUrl || room.ideUrl,
         port: room.port,
+        ownerId: room.ownerId,
         workspacePath: room.workspacePath,
         createdAt: room.createdAt,
         lastActiveAt: room.lastActiveAt,

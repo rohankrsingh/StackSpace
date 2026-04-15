@@ -47,13 +47,25 @@ import { useKeyboardShortcuts, Shortcut } from "@/hooks/useKeyboardShortcuts";
 import { ShortcutsDialog } from "@/components/room/ShortcutsDialog";
 import { ChatInput, ChatInputTextArea, ChatInputSubmit, ChatInputFile } from "@/components/ui/chat-input";
 import { FileAttachmentPreview } from "@/components/room/FileAttachmentPreview";
+import { JoinLobby } from "@/components/room/JoinLobby";
+import { JoinApprovalToast } from "@/components/room/JoinApprovalToast";
 
 interface RoomStatus {
   roomId: string;
   status: "running" | "stopped";
   ideUrl: string;
   containerName?: string;
+  ownerId?: string;
+  name?: string;
 }
+
+interface PendingJoinRequest {
+  roomId: string;
+  user: { id: string; name: string };
+  requesterId: string;
+}
+
+type JoinState = "loading" | "waiting" | "approved" | "rejected";
 
 interface User {
   id: string;
@@ -77,25 +89,24 @@ export default function RoomPage() {
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [isUploading, setIsUploading] = useState(false);
 
+  // Join approval flow state
+  const [joinState, setJoinState] = useState<JoinState>("loading");
+  const [rejectionReason, setRejectionReason] = useState<string | undefined>();
+  const [pendingRequests, setPendingRequests] = useState<PendingJoinRequest[]>([]);
+
   const chatMessages = useSelector((state: RootState) => state.chat.messages);
   const unreadCount = useSelector((state: RootState) => state.chat.unreadCount);
   const activities = useSelector((state: RootState) => state.activity.activities);
 
-  // Set current user from auth OR create guest user
+  // Set current user from auth only — no guest users allowed
   useEffect(() => {
     if (authUser) {
       setCurrentUser({
         id: authUser.id,
         name: authUser.name,
       });
-    } else {
-      // Create a guest user if not authenticated
-      const guestId = `guest_${Math.random().toString(36).substr(2, 9)}`;
-      setCurrentUser({
-        id: guestId,
-        name: `Guest ${guestId.substr(-4)}`,
-      });
     }
+    // Unauthenticated users are handled by ProtectedRoute redirect
   }, [authUser]);
 
   // Fetch room status on load
@@ -145,57 +156,99 @@ export default function RoomPage() {
     return () => clearInterval(intervalId);
   }, [roomId, roomStatus?.status]);
 
-  // Setup Socket.IO for real-time features
+  // Determine if the current user is the owner
+  const isOwner = !!(authUser && roomStatus?.ownerId && authUser.id === roomStatus.ownerId);
+
+  // Setup Socket.IO for real-time features + knock-to-enter flow
   useEffect(() => {
-    if (!roomId || !currentUser) return;
+    if (!roomId || !currentUser || !roomStatus) return;
 
     const socket = getSocket(roomId);
-    console.log(`[Room] Setting up Socket.IO for room ${roomId} with user ${currentUser.name}`);
+    console.log(`[Room] Setting up Socket.IO for room ${roomId} with user ${currentUser.name} (owner: ${isOwner})`);
 
-    // Emit join-room with user info (for file watcher)
-    socket.emit("join-room", { roomId, user: currentUser });
-    console.log(`[Room] Emitted join-room event`);
+    if (isOwner) {
+      // ── Owner path ──────────────────────────────────────────────────────────
+      // Register as owner so the server can route knock requests to us
+      socket.emit("register-owner", { roomId, userId: currentUser.id });
 
-    // Listen for online users updates
+      // Join the Socket.IO room immediately
+      socket.emit("join-room", { roomId, user: currentUser });
+      setJoinState("approved");
+
+      // Listen for incoming join requests
+      socket.on("join-request", (req: PendingJoinRequest) => {
+        console.log(`[Room] Incoming join request from ${req.user.name}`);
+        setPendingRequests((prev) => {
+          // Deduplicate by requesterId
+          if (prev.find((r) => r.requesterId === req.requesterId)) return prev;
+          return [...prev, req];
+        });
+      });
+    } else {
+      // ── Guest path ──────────────────────────────────────────────────────────
+      // Send a knock request and wait in the lobby
+      socket.emit("join-request", { roomId, user: currentUser });
+      setJoinState("waiting");
+
+      socket.on("join-approved", () => {
+        console.log(`[Room] Join approved!`);
+        setJoinState("approved");
+        // Actually join the Socket.IO room now
+        socket.emit("join-room", { roomId, user: currentUser });
+      });
+
+      socket.on("join-rejected", ({ reason }: { reason: string }) => {
+        console.log(`[Room] Join rejected: ${reason}`);
+        setJoinState("rejected");
+        setRejectionReason(reason);
+      });
+    }
+
+    // Common listeners (active for both owner and approved guest)
     socket.on("users-update", (users: User[]) => {
-      console.log(`[Room] Users update:`, users);
       setOnlineUsers(users);
     });
 
-
-
-    // Listen for file activity from file watcher
     socket.on("activity:new", (activity: any) => {
-      console.log(`[Room] Activity received:`, activity);
       dispatch(addActivity({
         id: activity.id,
         user: activity.user,
         type: activity.type,
         path: activity.path,
-        ts: activity.ts
+        ts: activity.ts,
       }));
     });
 
-    socket.on("connect", () => {
-      console.log(`[Room] Socket.IO connected`);
-    });
-
-    socket.on("disconnect", () => {
-      console.log(`[Room] Socket.IO disconnected`);
-    });
+    socket.on("connect", () => console.log(`[Room] Socket.IO connected`));
+    socket.on("disconnect", () => console.log(`[Room] Socket.IO disconnected`));
 
     return () => {
-      console.log(`[Room] Cleaning up Socket.IO listeners`);
       if (socket.connected) {
         socket.emit("user-left", { roomId, userId: currentUser.id });
       }
       socket.off("users-update");
-
       socket.off("activity:new");
       socket.off("connect");
       socket.off("disconnect");
+      socket.off("join-request");
+      socket.off("join-approved");
+      socket.off("join-rejected");
     };
-  }, [roomId, currentUser, dispatch]);
+  }, [roomId, currentUser, roomStatus, isOwner, dispatch]);
+
+  // Handler: owner approves a pending request
+  const handleApproveJoin = useCallback((requesterId: string) => {
+    const socket = getSocket();
+    socket.emit("join-response", { roomId, requesterId, approved: true });
+    setPendingRequests((prev) => prev.filter((r) => r.requesterId !== requesterId));
+  }, [roomId]);
+
+  // Handler: owner rejects a pending request
+  const handleRejectJoin = useCallback((requesterId: string) => {
+    const socket = getSocket();
+    socket.emit("join-response", { roomId, requesterId, approved: false });
+    setPendingRequests((prev) => prev.filter((r) => r.requesterId !== requesterId));
+  }, [roomId]);
 
   // Initial data load
   useEffect(() => {
@@ -472,32 +525,58 @@ export default function RoomPage() {
         loading={startingServer}
         duration={1500}
       />
-      <RoomContent
-        roomId={roomId}
-        roomStatus={roomStatus}
-        users={(() => {
-          // Deduplicate users: combine currentUser and onlineUsers, removing duplicates by id
-          const allUsers = currentUser ? [currentUser, ...onlineUsers] : onlineUsers;
-          const uniqueUsers = allUsers.filter((user, index, self) =>
-            index === self.findIndex((u) => u.id === user.id)
-          );
-          return uniqueUsers;
-        })()}
-        chatMessages={chatMessages}
-        activities={activities}
-        chatMessage={chatMessage}
-        setChatMessage={setChatMessage}
-        handleSendMessage={handleSendMessage}
-        handleCopyLink={handleCopyLink}
-        handleStartRoom={handleStartRoom}
-        handleStopRoom={handleStopRoom}
-        handleLeaveRoom={handleLeaveRoom}
-        loading={loading}
-        selectedFile={selectedFile}
-        setSelectedFile={setSelectedFile}
-        isUploading={isUploading}
-        getReadableFileType={getReadableFileType}
-      />
+
+      {/* Guest lobby — shown while waiting for owner to approve or after rejection */}
+      {!isOwner && (joinState === "waiting" || joinState === "rejected") && currentUser && (
+        <JoinLobby
+          roomName={roomStatus.name}
+          userName={currentUser.name}
+          onCancel={handleLeaveRoom}
+          rejected={joinState === "rejected"}
+          rejectionReason={rejectionReason}
+        />
+      )}
+
+      {/* Owner approval toast stack — one toast per pending join request */}
+      <AnimatePresence>
+        {isOwner && pendingRequests.map((req) => (
+          <JoinApprovalToast
+            key={req.requesterId}
+            request={req}
+            onAllow={handleApproveJoin}
+            onReject={handleRejectJoin}
+          />
+        ))}
+      </AnimatePresence>
+
+      {/* Main room UI — only render when this user is authorised to be here */}
+      {(isOwner || joinState === "approved") && (
+        <RoomContent
+          roomId={roomId}
+          roomStatus={roomStatus}
+          users={(() => {
+            const allUsers = currentUser ? [currentUser, ...onlineUsers] : onlineUsers;
+            const uniqueUsers = allUsers.filter((user, index, self) =>
+              index === self.findIndex((u) => u.id === user.id)
+            );
+            return uniqueUsers;
+          })()}
+          chatMessages={chatMessages}
+          activities={activities}
+          chatMessage={chatMessage}
+          setChatMessage={setChatMessage}
+          handleSendMessage={handleSendMessage}
+          handleCopyLink={handleCopyLink}
+          handleStartRoom={handleStartRoom}
+          handleStopRoom={handleStopRoom}
+          handleLeaveRoom={handleLeaveRoom}
+          loading={loading}
+          selectedFile={selectedFile}
+          setSelectedFile={setSelectedFile}
+          isUploading={isUploading}
+          getReadableFileType={getReadableFileType}
+        />
+      )}
     </ProtectedRoute>
   );
 }

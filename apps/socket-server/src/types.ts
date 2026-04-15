@@ -7,6 +7,8 @@ export interface User {
 
 export interface RoomState {
     users: User[];
+    ownerSocketId?: string;         // socket.id of the room owner
+    pendingRequests: Map<string, { user: User; socketId: string }>; // userId → pending joiner info
 }
 
 export interface FileActivity {

@@ -19,6 +19,7 @@ DOCKER_USERNAME=$1
 
 PROJECT_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 DOCKER_DIR="$PROJECT_ROOT/docker"
+SOCKET_SERVER_DIR="$PROJECT_ROOT/apps/socket-server"
 
 echo "============================================"
 echo "Logging in to Docker Hub..."
@@ -36,17 +37,18 @@ docker login --username AWS --password-stdin $ECR_REGISTRY \
 echo "✅ Logged in to both registries"
 echo ""
 
-# Format: name:version:Dockerfile
+# Format: name:version:Dockerfile:build_context
 declare -a IMAGES=(
-    "openvscode-node:20:Dockerfile.nodejs"
-    "openvscode-python:3.12:Dockerfile.python"
-    "openvscode-nextjs:20:Dockerfile.nextjs"
-    "openvscode-java:21:Dockerfile.java"
-    "openvscode-cpp:bookworm:Dockerfile.cpp"
+    "openvscode-node:20:Dockerfile.nodejs:$DOCKER_DIR"
+    "openvscode-python:3.12:Dockerfile.python:$DOCKER_DIR"
+    "openvscode-nextjs:20:Dockerfile.nextjs:$DOCKER_DIR"
+    "openvscode-java:21:Dockerfile.java:$DOCKER_DIR"
+    "openvscode-cpp:bookworm:Dockerfile.cpp:$DOCKER_DIR"
+    "socket-server:latest:Dockerfile:$SOCKET_SERVER_DIR"
 )
 
 for image in "${IMAGES[@]}"; do
-    IFS=':' read -r tag version dockerfile <<< "$image"
+    IFS=':' read -r tag version dockerfile context <<< "$image"
 
     LOCAL_TAG="stackspace-$tag:$version"
     DOCKERHUB_TAG="$DOCKER_USERNAME/stackspace-$tag:$version"
@@ -56,7 +58,7 @@ for image in "${IMAGES[@]}"; do
     echo "Building: $LOCAL_TAG"
     echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
 
-    docker build -f "$DOCKER_DIR/$dockerfile" -t "$LOCAL_TAG" "$DOCKER_DIR" \
+    docker build -f "$context/$dockerfile" -t "$LOCAL_TAG" "$context" \
         || { echo "❌ Build failed for $LOCAL_TAG"; exit 1; }
 
     echo ""
