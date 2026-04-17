@@ -207,16 +207,14 @@ export default function RoomPage() {
     // Emit events when socket connects (handles reconnects with new socket ids)
     const onConnect = () => {
       console.log(`[Room] Socket.IO connected (${socket.id})`);
+      
+      // FOR DEMO: Bypass knock-to-enter and join directly
       if (isOwner) {
-        // Owner registers to receive join requests
         socket.emit("register-owner", { roomId, userId: currentUser.id });
-        socket.emit("join-room", { roomId, user: currentUser });
-        setJoinState("approved");
-      } else {
-        // Guest sends a knock request
-        socket.emit("join-request", { roomId, user: currentUser });
-        setJoinState("waiting");
       }
+      
+      socket.emit("join-room", { roomId, user: currentUser });
+      setJoinState("approved");
     };
 
     if (socket.connected) {
