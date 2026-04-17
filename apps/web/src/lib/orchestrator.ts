@@ -40,10 +40,11 @@ export async function orchestratorStartRoom(
     roomId: string,
     workspacePath: string,
     stackId: string,
+    roomName: string, // Added to pass to ECS
     existingPort?: number
 ): Promise<StartRoomResult> {
     if (isProductionMode()) {
-        const { taskArn, ideUrl } = await ecsRunTask(roomId, stackId);
+        const { taskArn, ideUrl } = await ecsRunTask(roomId, stackId, roomName);
         return {
             ideUrl,
             containerName: `ecs-task-${roomId}`,
@@ -67,14 +68,15 @@ export async function orchestratorRestartRoom(
     roomId: string,
     containerName: string,
     taskArn?: string,
-    stackId: string = "node-basic"
+    stackId: string = "node-basic",
+    roomName: string = "workspace"
 ): Promise<StartRoomResult> {
     if (isProductionMode()) {
         // Stop old task (ignore errors if already stopped)
         if (taskArn) {
             await ecsStopTask(taskArn);
         }
-        const { taskArn: newTaskArn, ideUrl } = await ecsRunTask(roomId, stackId);
+        const { taskArn: newTaskArn, ideUrl } = await ecsRunTask(roomId, stackId, roomName);
         return {
             ideUrl,
             containerName: `ecs-task-${roomId}`,
@@ -97,11 +99,12 @@ export async function orchestratorRestartRoomWithStack(
     roomId: string,
     containerName: string,
     stackId: string,
-    taskArn?: string
+    taskArn?: string,
+    roomName: string = "workspace"
 ): Promise<StartRoomResult> {
     if (isProductionMode()) {
         if (taskArn) await ecsStopTask(taskArn);
-        const { taskArn: newTaskArn, ideUrl } = await ecsRunTask(roomId, stackId);
+        const { taskArn: newTaskArn, ideUrl } = await ecsRunTask(roomId, stackId, roomName);
         return {
             ideUrl,
             containerName: `ecs-task-${roomId}`,

@@ -22,22 +22,46 @@ import {
   addToast,
   Button as HeroButton,
 } from "@heroui/react";
+import { MultiStepLoader } from "@/components/ui/multi-step-loader";
 
 export default function Dashboard() {
   const router = useRouter();
   const dispatch = useDispatch<AppDispatch>();
   const { user } = useSelector((state: RootState) => state.auth);
   const [joinRoomId, setJoinRoomId] = useState("");
-  const [isCreating, setIsCreating] = useState(false);
+  const [isCreatingServer, setIsCreatingServer] = useState(false);
+  const [creationState, setCreationState] = useState(0);
   const [dialogOpen, setDialogOpen] = useState(false);
 
+  const creationStates = [
+    { text: "Preparing workspace environment" },
+    { text: "Building project template" },
+    { text: "Provisioning isolated cloud container" },
+    { text: "Allocating Fargate resources & networking" },
+    { text: "Starting VS Code backend — this may take a moment" },
+    { text: "Waiting for IDE to be ready..." },
+    { text: "IDE Ready! Entering your workspace..." },
+  ];
+
   const handleCreateRoom = async (stackId: string, roomName: string) => {
+    let mockInterval: NodeJS.Timeout | null = null;
     try {
-      setIsCreating(true);
-      // Import account dynamically or use from a helper, here we assume it's available or import it
-      // Standard pattern: import { account } from "@/lib/auth"; at top level
+      setIsCreatingServer(true);
+      setCreationState(0);
+      setDialogOpen(false); // Close the dialog to show the full-screen loader
+
+      await new Promise(r => setTimeout(r, 600));
+      setCreationState(1);
 
       const { jwt } = await import("@/lib/auth").then(m => m.account.createJWT());
+      setCreationState(2);
+
+      mockInterval = setInterval(() => {
+        setCreationState(prev => {
+          if (prev < 5) return prev + 1; // Cap at "Almost there..."
+          return prev;
+        });
+      }, 2000);
 
       const response = await fetch("/api/rooms/create", {
         method: "POST",
@@ -52,6 +76,11 @@ export default function Dashboard() {
         }),
       });
       const data = await response.json();
+      
+      if (mockInterval) clearInterval(mockInterval);
+      setCreationState(6); // "IDE Ready!"
+      await new Promise(r => setTimeout(r, 800)); // Let them see it finished
+
       if (data.roomId) {
         addToast({
           title: "Room Created",
@@ -60,9 +89,9 @@ export default function Dashboard() {
           variant: "flat"
         });
         router.push(`/room/${data.roomId}`);
-        // Force a refresh of the room list if we were to stay on page, but we navigate away
       } else {
         console.error("Failed to create room:", data);
+        setIsCreatingServer(false);
         addToast({
           title: "Creation Failed",
           description: data.message || "Could not create the room.",
@@ -71,6 +100,8 @@ export default function Dashboard() {
         });
       }
     } catch (error: any) {
+      if (mockInterval) clearInterval(mockInterval);
+      setIsCreatingServer(false);
       console.error("Failed to create room:", error);
       addToast({
         title: "Error",
@@ -78,9 +109,6 @@ export default function Dashboard() {
         color: "danger",
         variant: "flat"
       });
-      throw error;
-    } finally {
-      setIsCreating(false);
     }
   };
 
@@ -98,7 +126,13 @@ export default function Dashboard() {
         open={dialogOpen}
         onOpenChange={setDialogOpen}
         onCreateRoom={handleCreateRoom}
-        loading={isCreating}
+        loading={isCreatingServer}
+      />
+      <MultiStepLoader
+        loadingStates={creationStates}
+        loading={isCreatingServer}
+        duration={1500}
+        currentState={creationState}
       />
       <DashboardLayout
         sidebar={
@@ -131,11 +165,11 @@ export default function Dashboard() {
               </CardHeader>
               <CardContent className="space-y-4">
                 <p className="text-sm text-foreground/70">
-                  Create a new workspace where you and your team can code together. You'll get a unique room ID to share.
+                  Create a new workspace where you and your team can code together. You&apos;ll get a unique room ID to share.
                 </p>
-                <Button onClick={() => setDialogOpen(true)} disabled={isCreating} className="w-full bg-blue-600 hover:bg-blue-700">
+                <Button onClick={() => setDialogOpen(true)} disabled={isCreatingServer} className="w-full bg-blue-600 hover:bg-blue-700">
                   <Plus className="h-4 w-4 mr-2" />
-                  {isCreating ? "Creating..." : "Create New Room"}
+                  {isCreatingServer ? "Creating..." : "Create New Room"}
                 </Button>
               </CardContent>
             </Card>

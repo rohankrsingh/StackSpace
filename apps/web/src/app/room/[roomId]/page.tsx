@@ -8,7 +8,26 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Input } from "@/components/ui/input";
-import { LayoutGrid, Users, MessageSquare, Activity, Loader2, Power, LogOut, Code, Edit3, Maximize2, Layout, FilePlus, FileText, Trash2, Clock, Keyboard, Loader, FileIcon, Download, ImageIcon, ExternalLink } from "lucide-react";
+import { 
+    LayoutGrid, 
+    Users, 
+    MessageSquare, 
+    Activity, 
+    Power, 
+    LogOut, 
+    Code, 
+    Edit3, 
+    Maximize2, 
+    Layout, 
+    FilePlus, 
+    FileText, 
+    Trash2, 
+    Clock, 
+    Keyboard, 
+    FileIcon, 
+    Download, 
+    ExternalLink 
+} from "lucide-react";
 import { motion, AnimatePresence } from "motion/react";
 import LoaderKokonut from "@/components/kokonutui/loader";
 import { MultiStepLoader } from "@/components/ui/multi-step-loader";
@@ -119,6 +138,25 @@ export default function RoomPage() {
           throw new Error("Room not found");
         }
         const data = await response.json();
+
+        // If DB says "running", verify the container is actually reachable.
+        // Cloudflare 521 = host error = container is dead. Downgrade locally
+        // so the UI shows "Start Room" instead of a broken iframe.
+        if (data.status === "running" && data.ideUrl) {
+          try {
+            const probe = await fetch(data.ideUrl, {
+              signal: AbortSignal.timeout(6_000),
+              mode: "no-cors", // avoid CORS preflight; any non-network-error = healthy
+            });
+            // no-cors always resolves with status 0 on success — that's fine
+            console.log(`[Room] IDE liveness check passed (type=${probe.type})`);
+          } catch {
+            // Network error / timeout → container is dead
+            console.warn("[Room] IDE unreachable, overriding status to stopped");
+            data.status = "stopped";
+          }
+        }
+
         setRoomStatus(data);
         setError(null);
       } catch (err) {
@@ -166,34 +204,41 @@ export default function RoomPage() {
     const socket = getSocket(roomId);
     console.log(`[Room] Setting up Socket.IO for room ${roomId} with user ${currentUser.name} (owner: ${isOwner})`);
 
+    // Emit events when socket connects (handles reconnects with new socket ids)
+    const onConnect = () => {
+      console.log(`[Room] Socket.IO connected (${socket.id})`);
+      if (isOwner) {
+        // Owner registers to receive join requests
+        socket.emit("register-owner", { roomId, userId: currentUser.id });
+        socket.emit("join-room", { roomId, user: currentUser });
+        setJoinState("approved");
+      } else {
+        // Guest sends a knock request
+        socket.emit("join-request", { roomId, user: currentUser });
+        setJoinState("waiting");
+      }
+    };
+
+    if (socket.connected) {
+      onConnect();
+    }
+    socket.on("connect", onConnect);
+
     if (isOwner) {
       // ── Owner path ──────────────────────────────────────────────────────────
-      // Register as owner so the server can route knock requests to us
-      socket.emit("register-owner", { roomId, userId: currentUser.id });
-
-      // Join the Socket.IO room immediately
-      socket.emit("join-room", { roomId, user: currentUser });
-      setJoinState("approved");
-
       // Listen for incoming join requests
       socket.on("join-request", (req: PendingJoinRequest) => {
         console.log(`[Room] Incoming join request from ${req.user.name}`);
         setPendingRequests((prev) => {
-          // Deduplicate by requesterId
           if (prev.find((r) => r.requesterId === req.requesterId)) return prev;
           return [...prev, req];
         });
       });
     } else {
       // ── Guest path ──────────────────────────────────────────────────────────
-      // Send a knock request and wait in the lobby
-      socket.emit("join-request", { roomId, user: currentUser });
-      setJoinState("waiting");
-
       socket.on("join-approved", () => {
         console.log(`[Room] Join approved!`);
         setJoinState("approved");
-        // Actually join the Socket.IO room now
         socket.emit("join-room", { roomId, user: currentUser });
       });
 

@@ -10,11 +10,10 @@ export function getRepoRoot(): string {
   return path.resolve(process.cwd(), "..", "..");
 }
 
-/**
- * Get workspace base directory
- */
+import { isProductionMode } from "./orchestrator";
+
 export function getWorkspaceBase(): string {
-  return path.join(getRepoRoot(), "workspaces");
+  return process.env.WORKSPACES_DIR || path.join(getRepoRoot(), "workspaces");
 }
 
 /**
@@ -40,11 +39,23 @@ export function ensureWorkspace(roomId: string): string {
 /**
  * Write template files for a stack
  */
-export function writeTemplateFiles(roomId: string, stack: StackTemplate): void {
+export function writeTemplateFiles(roomId: string, stack: StackTemplate, roomName: string = "workspace"): void {
   const workspacePath = getWorkspacePath(roomId);
 
+  // Deep clone to avoid mutating globals
+  const files = JSON.parse(JSON.stringify(stack.files));
+  const safeProjectName = roomName.toLowerCase().replace(/[^a-z0-9-]/g, '-').replace(/^-+|-+$/g, '') || "workspace";
+
+  if (files["package.json"]) {
+    try {
+      const pkg = JSON.parse(files["package.json"]);
+      pkg.name = safeProjectName;
+      files["package.json"] = JSON.stringify(pkg, null, 2);
+    } catch (e) {}
+  }
+
   // Create all files from template
-  for (const [filePath, content] of Object.entries(stack.files)) {
+  for (const [filePath, content] of Object.entries(files)) {
     const fullPath = path.join(workspacePath, filePath);
 
     // Create directory if needed
@@ -54,10 +65,10 @@ export function writeTemplateFiles(roomId: string, stack: StackTemplate): void {
     }
 
     // Write file
-    fs.writeFileSync(fullPath, content);
+    fs.writeFileSync(fullPath, content as string);
   }
 
-  console.log(`✓ Template files created for ${stack.name}`);
+  console.log(`✓ Template files created for ${stack.name} with project name ${safeProjectName}`);
 }
 
 /**

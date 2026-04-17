@@ -46,7 +46,7 @@ export async function POST(request: NextRequest) {
         console.log(`✓ Workspace created: ${workspacePath}`);
 
         // 2. Write template files (local only)
-        writeTemplateFiles(roomId, stack);
+        writeTemplateFiles(roomId, stack, roomName);
         writeVSCodeSettings(roomId);
         console.log(`✓ Template files created for stack: ${stack.name}`);
       } else {
@@ -58,7 +58,8 @@ export async function POST(request: NextRequest) {
       const { ideUrl, containerName, port, taskArn } = await orchestratorStartRoom(
         roomId,
         workspacePath,
-        stackId
+        stackId,
+        roomName
       );
 
       // 4. Create Appwrite room document

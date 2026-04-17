@@ -58,12 +58,12 @@ export function JoinApprovalToast({ request, onAllow, onReject, timeoutSeconds =
         <div className="flex items-start gap-3">
           {/* Avatar */}
           <div className="flex-shrink-0 w-10 h-10 rounded-full bg-primary/15 border border-primary/30 flex items-center justify-center font-bold text-primary text-sm">
-            {request.user.name.charAt(0).toUpperCase()}
+            {(request.user.name || "?").charAt(0).toUpperCase()}
           </div>
 
           <div className="flex-1 min-w-0">
             <p className="text-sm font-semibold text-foreground truncate">
-              {request.user.name}
+              {request.user.name || "Guest"}
             </p>
             <p className="text-xs text-muted-foreground">
               wants to join your room

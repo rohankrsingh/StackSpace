@@ -40,7 +40,7 @@ export async function POST(
     // If DB says running but container is actually stopped, sync and restart
     if (room.status === "running" && !running) {
       console.log(`ℹ Room ${roomId} marked as running but container is stopped. Restarting...`);
-      const result = await orchestratorRestartRoom(roomId, room.containerName, room.taskArn, room.stackId);
+      const result = await orchestratorRestartRoom(roomId, room.containerName, room.taskArn, room.stackId, room.name);
 
       // Update DB with new Public IP / Task ARN
       await updateRoomStatus(roomId, "running", {
@@ -70,7 +70,7 @@ export async function POST(
 
     try {
       // Restart the stopped container/task
-      const result = await orchestratorRestartRoom(roomId, room.containerName, room.taskArn, room.stackId);
+      const result = await orchestratorRestartRoom(roomId, room.containerName, room.taskArn, room.stackId, room.name);
 
       // Update room status and new cloud metadata
       await updateRoomStatus(roomId, "running", {
