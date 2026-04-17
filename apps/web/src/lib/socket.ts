@@ -4,11 +4,29 @@ let socket: Socket | null = null;
 
 export const getSocket = (roomId?: string) => {
     if (!socket) {
-        // In production, use the current domain (which proxies via Vercel Rewrites)
-        const isProd = typeof window !== 'undefined' && window.location.hostname !== 'localhost' && !window.location.hostname.includes('192.168');
-        const socketUrl = process.env.NEXT_PUBLIC_SOCKET_URL || (isProd ? window.location.origin : "http://localhost:3001");
+        // DETECT ENVIRONMENT
+        const isBrowser = typeof window !== 'undefined';
+        const isLocalhost = isBrowser && (
+            window.location.hostname === 'localhost' || 
+            window.location.hostname === '127.0.0.1' || 
+            window.location.hostname.startsWith('192.168')
+        );
 
-        console.log(`[Socket] Initializing connection to ${socketUrl} (Mode: ${isProd ? "Production/Proxy" : "Local/Direct"})`);
+        // Logic: 
+        // 1. If NEXT_PUBLIC_SOCKET_URL is set (and starts with http), use it.
+        // 2. If we are in the browser and NOT on localhost, use the current origin (Vercel Proxy).
+        // 3. Otherwise, use localhost:3001.
+        let socketUrl = process.env.NEXT_PUBLIC_SOCKET_URL;
+        
+        if (!socketUrl) {
+            if (isBrowser && !isLocalhost) {
+                socketUrl = window.location.origin; // Use the HTTPS proxy
+            } else {
+                socketUrl = "http://localhost:3001";
+            }
+        }
+
+        console.log(`[Socket] Initializing connection to ${socketUrl} | Proxy Mode: ${!isLocalhost && isBrowser}`);
 
         socket = io(socketUrl, {
             transports: ["polling", "websocket"],
@@ -19,6 +37,7 @@ export const getSocket = (roomId?: string) => {
             autoConnect: true,
             timeout: 15000,
             withCredentials: true,
+            // The path must match the Vercel rewrite AND the Socket Server's config
             path: "/socket.io/"
         });
 
@@ -28,6 +47,10 @@ export const getSocket = (roomId?: string) => {
 
         socket.on("connect_error", (error) => {
             console.warn(`[Socket] Connection error on ${socketUrl}:`, error.message);
+            // Fallback for mixed content detection if it still fails
+            if (error.message.includes("xhr poll error") && socketUrl?.startsWith("http://")) {
+                console.error("[Socket] Possible Mixed Content error detected. Check your proxy settings.");
+            }
         });
 
         socket.on("disconnect", (reason) => {
@@ -38,7 +61,6 @@ export const getSocket = (roomId?: string) => {
         });
     }
 
-    // Check if we need to manually connect
     if (!socket.connected) {
         socket.connect();
     }
