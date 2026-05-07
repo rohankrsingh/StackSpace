@@ -7,26 +7,18 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Input } from "@/components/ui/input";
-import { 
-    LayoutGrid, 
-    Users, 
-    MessageSquare, 
-    Activity, 
-    Power, 
-    LogOut, 
-    Code, 
-    Edit3, 
-    Maximize2, 
-    Layout, 
-    FilePlus, 
-    FileText, 
-    Trash2, 
-    Clock, 
-    Keyboard, 
-    FileIcon, 
-    Download, 
-    ExternalLink 
+
+import {
+  Users,
+  MessageSquare,
+  Code,
+  Edit3,
+  Activity,
+  FileText,
+  Keyboard,
+  FileIcon,
+  Download,
+  ExternalLink
 } from "lucide-react";
 import { motion, AnimatePresence } from "motion/react";
 import LoaderKokonut from "@/components/kokonutui/loader";
@@ -34,8 +26,7 @@ import { MultiStepLoader } from "@/components/ui/multi-step-loader";
 import { useDispatch, useSelector } from "react-redux";
 import { RootState, AppDispatch } from "@/store";
 import { addMessage, incrementUnread, resetUnread } from "@/store/slices/chatSlice";
-import { addActivity } from "@/store/slices/activitySlice";
-import { ChatService, ActivityService } from "@/lib/services";
+import { ChatService } from "@/lib/services";
 import { ProtectedRoute } from "@/components/ProtectedRoute";
 import { Whiteboard } from "@/components/room/Whiteboard";
 import RoomActionsDropdown from "@/components/room/RoomActionsDropdown";
@@ -114,8 +105,6 @@ export default function RoomPage() {
   const [pendingRequests, setPendingRequests] = useState<PendingJoinRequest[]>([]);
 
   const chatMessages = useSelector((state: RootState) => state.chat.messages);
-  const unreadCount = useSelector((state: RootState) => state.chat.unreadCount);
-  const activities = useSelector((state: RootState) => state.activity.activities);
 
   // Set current user from auth only — no guest users allowed
   useEffect(() => {
@@ -207,12 +196,12 @@ export default function RoomPage() {
     // Emit events when socket connects (handles reconnects with new socket ids)
     const onConnect = () => {
       console.log(`[Room] Socket.IO connected (${socket.id})`);
-      
+
       // FOR DEMO: Bypass knock-to-enter and join directly
       if (isOwner) {
         socket.emit("register-owner", { roomId, userId: currentUser.id });
       }
-      
+
       socket.emit("join-room", { roomId, user: currentUser });
       setJoinState("approved");
     };
@@ -252,15 +241,7 @@ export default function RoomPage() {
       setOnlineUsers(users);
     });
 
-    socket.on("activity:new", (activity: any) => {
-      dispatch(addActivity({
-        id: activity.id,
-        user: activity.user,
-        type: activity.type,
-        path: activity.path,
-        ts: activity.ts,
-      }));
-    });
+
 
     socket.on("connect", () => console.log(`[Room] Socket.IO connected`));
     socket.on("disconnect", () => console.log(`[Room] Socket.IO disconnected`));
@@ -270,7 +251,6 @@ export default function RoomPage() {
         socket.emit("user-left", { roomId, userId: currentUser.id });
       }
       socket.off("users-update");
-      socket.off("activity:new");
       socket.off("connect");
       socket.off("disconnect");
       socket.off("join-request");
@@ -299,10 +279,7 @@ export default function RoomPage() {
 
     const loadData = async () => {
       try {
-        const [msgs, acts] = await Promise.all([
-          ChatService.getMessages(roomId),
-          ActivityService.getActivities(roomId)
-        ]);
+        const msgs = await ChatService.getMessages(roomId);
 
         [...msgs.documents].reverse().forEach(doc => {
           dispatch(addMessage({
@@ -313,16 +290,6 @@ export default function RoomPage() {
             fileId: doc.fileId,
             fileType: doc.fileType,
             fileName: doc.fileName
-          }));
-        });
-
-        [...acts.documents].reverse().forEach(doc => {
-          dispatch(addActivity({
-            id: doc.$id,
-            user: { id: doc.userId, name: doc.username },
-            type: doc.type,
-            path: doc.path,
-            ts: doc.createdAt
           }));
         });
       } catch (e) {
@@ -372,16 +339,7 @@ export default function RoomPage() {
         chatMessage || (selectedFile ? "📎 Attachment" : ""),
         fileData
       );
-      // Log activity
-      if (selectedFile) {
-        await ActivityService.logActivity(
-          roomId,
-          currentUser.id,
-          currentUser.name,
-          'created',
-          selectedFile.name
-        );
-      }
+
 
       setChatMessage("");
       setSelectedFile(null);
@@ -605,7 +563,6 @@ export default function RoomPage() {
             return uniqueUsers;
           })()}
           chatMessages={chatMessages}
-          activities={activities}
           chatMessage={chatMessage}
           setChatMessage={setChatMessage}
           handleSendMessage={handleSendMessage}
@@ -625,7 +582,7 @@ export default function RoomPage() {
 }
 
 function RoomContent({
-  roomId, roomStatus, users, chatMessages, activities,
+  roomId, roomStatus, users, chatMessages,
   chatMessage, setChatMessage, handleSendMessage,
   handleCopyLink, handleStartRoom, handleStopRoom, handleLeaveRoom, loading,
   selectedFile, setSelectedFile, isUploading, getReadableFileType
@@ -739,19 +696,8 @@ function RoomContent({
       }
     });
 
-    const unsubscribeActivity = ActivityService.subscribe(roomId, (payload) => {
-      dispatch(addActivity({
-        id: payload.$id,
-        user: { id: payload.userId, name: payload.username },
-        type: payload.type,
-        path: payload.path,
-        ts: payload.createdAt
-      }));
-    });
-
     return () => {
       try { unsubscribeChat(); } catch (e) { }
-      try { unsubscribeActivity(); } catch (e) { }
     };
   }, [roomId, isOpen, activeTab, authUser, dispatch]);
 
@@ -1018,23 +964,7 @@ function RoomContent({
                     </Tooltip>
                   </DockIcon>
 
-                  <DockIcon>
-                    <Tooltip>
-                      <TooltipTrigger asChild>
-                        <div
-                          onClick={() => handleDockItemClick("activity")}
-                          className={cn(buttonVariants({ variant: "ghost", size: "icon" }), "size-12 rounded-full cursor-pointer")}
-                        >
-                          <Activity className="size-5 text-foreground" />
-                        </div>
-                      </TooltipTrigger>
-                      <TooltipContent>
-                        <p>Activity</p>
-                      </TooltipContent>
-                    </Tooltip>
-                  </DockIcon>
 
-                  <Separator orientation="vertical" className=" bg-border/70" />
 
                   <DockIcon>
                     <Tooltip>
@@ -1086,7 +1016,7 @@ function RoomContent({
               </DrawerHeader>
               <DrawerBody className="p-0 overflow-hidden">
                 <Tabs value={activeTab} onValueChange={setActiveTab} className="flex-1 flex flex-col px-4 pt-3 h-full">
-                  <TabsList className="grid w-full grid-cols-3 mb-4 bg-muted">
+                  <TabsList className="grid w-full grid-cols-2 mb-4 bg-muted">
                     <TabsTrigger value="chat" className="text-xs">
                       <MessageSquare className="h-3.5 w-3.5 mr-1" />
                       Chat
@@ -1094,10 +1024,6 @@ function RoomContent({
                     <TabsTrigger value="users" className="text-xs">
                       <Users className="h-3.5 w-3.5 mr-1" />
                       Users
-                    </TabsTrigger>
-                    <TabsTrigger value="activity" className="text-xs">
-                      <Activity className="h-3.5 w-3.5 mr-1" />
-                      Logs
                     </TabsTrigger>
                   </TabsList>
 
@@ -1237,72 +1163,7 @@ function RoomContent({
                     )}
                   </TabsContent>
 
-                  {/* Activity Tab */}
-                  <TabsContent value="activity" className="flex-1 overflow-y-auto pr-1 mb-4 data-[state=inactive]:hidden">
-                    {activities.length === 0 ? (
-                      <div className="text-center text-muted-foreground py-8 flex flex-col items-center">
-                        <Activity className="h-8 w-8 opacity-50 mb-2" />
-                        <p className="text-xs">No activities yet</p>
-                      </div>
-                    ) : (
-                      <div className="space-y-2">
-                        {activities.map((a: any) => {
-                          const getActivityIcon = (type: string) => {
-                            switch (type) {
-                              case 'file:create': return <FilePlus className="h-4 w-4 text-green-500" />;
-                              case 'file:update': return <FileText className="h-4 w-4 text-blue-500" />;
-                              case 'file:delete': return <Trash2 className="h-4 w-4 text-red-500" />;
-                              default: return <FileText className="h-4 w-4 text-muted-foreground" />;
-                            }
-                          };
 
-                          const getActivityColor = (type: string) => {
-                            switch (type) {
-                              case 'file:create': return 'bg-green-500/10 border-green-500/20';
-                              case 'file:update': return 'bg-blue-500/10 border-blue-500/20';
-                              case 'file:delete': return 'bg-red-500/10 border-red-500/20';
-                              default: return 'bg-muted border-border';
-                            }
-                          };
-
-                          const getActivityLabel = (type: string) => {
-                            switch (type) {
-                              case 'file:create': return 'created';
-                              case 'file:update': return 'updated';
-                              case 'file:delete': return 'deleted';
-                              default: return type;
-                            }
-                          };
-
-                          const fileName = a.path.split('/').pop() || 'file';
-                          const timestamp = new Date(a.ts).toLocaleTimeString();
-
-                          return (
-                            <div key={a.id} className={`rounded-lg p-2 border transition-all ${getActivityColor(a.type)}`}>
-                              <div className="flex items-start gap-2">
-                                <div className="mt-0.5 shrink-0">
-                                  {getActivityIcon(a.type)}
-                                </div>
-                                <div className="flex-1 min-w-0">
-                                  <div className="flex items-baseline gap-1 flex-wrap">
-                                    <span className="font-semibold text-xs text-foreground">{a.user.name}</span>
-                                    <span className="text-xs text-muted-foreground">{getActivityLabel(a.type)}</span>
-                                  </div>
-                                  <div className="text-xs text-foreground mt-1 break-all font-mono bg-background/50 px-1.5 py-1 rounded border border-border">
-                                    {fileName}
-                                  </div>
-                                  <div className="text-xs text-muted-foreground mt-1 flex items-center gap-1">
-                                    <Clock className="h-3 w-3" />
-                                    {timestamp}
-                                  </div>
-                                </div>
-                              </div>
-                            </div>
-                          );
-                        })}
-                      </div>
-                    )}
-                  </TabsContent>
                 </Tabs>
               </DrawerBody>
             </>

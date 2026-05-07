@@ -86,6 +86,7 @@ export default function SignUp() {
           </h1>
 
           {/* Google OAuth Button */}
+          {/*
           <button className="w-full flex items-center justify-center gap-3 px-4 py-3 border border-gray-300 dark:border-gray-700 rounded-full text-gray-900 dark:text-white font-medium hover:bg-gray-50 dark:hover:bg-gray-900 transition-colors mb-6">
             <svg className="h-5 w-5" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
               <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4"/>
@@ -96,12 +97,12 @@ export default function SignUp() {
             <span>Sign up with Google</span>
           </button>
 
-          {/* Divider */}
           <div className="flex items-center gap-4 mb-6">
             <div className="flex-1 h-px bg-gray-300 dark:bg-gray-700"></div>
             <span className="text-gray-500 dark:text-gray-400 text-sm">or</span>
             <div className="flex-1 h-px bg-gray-300 dark:bg-gray-700"></div>
           </div>
+          */}
 
           {/* Email Input */}
           <div className="mb-4">

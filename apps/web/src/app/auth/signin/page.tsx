@@ -162,6 +162,7 @@ export default function SignIn() {
           </form>
 
           {/* Social Login */}
+          {/*
           <div className="mt-8 space-y-3">
             <p className="text-center text-gray-600 text-sm">Or continue with</p>
             <div className="flex gap-3">
@@ -177,6 +178,7 @@ export default function SignIn() {
 
             </div>
           </div>
+          */}
 
           {/* Sign Up Link */}
           <p className="text-center text-gray-600 mt-8">

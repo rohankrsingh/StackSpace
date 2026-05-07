@@ -214,7 +214,7 @@ export default function Dashboard() {
                 <p>• Create a room to start a new collaborative workspace</p>
                 <p>• Share the room ID with others to invite them</p>
                 <p>• Edit code together in real-time with presence updates</p>
-                <p>• Chat and view activity logs of all changes</p>
+                <p>• Chat and collaborate with others in real-time</p>
               </CardContent>
             </Card>
           </div>
