@@ -3,10 +3,12 @@ FROM debian:bookworm-slim
 LABEL maintainer="CollabCode"
 LABEL description="OpenVSCode Server with GCC C++ development environment (Debian Bookworm stable)"
 
+# ── System dependencies ────────────────────────────────────────────────────────
 RUN apt-get update && apt-get install -y --no-install-recommends \
-    curl wget git build-essential g++ gcc gdb valgrind cmake make iproute2 ca-certificates && \
+    curl wget git build-essential g++ gcc gdb valgrind cmake make clangd iproute2 ca-certificates && \
     rm -rf /var/lib/apt/lists/*
 
+# ── OpenVSCode Server ──────────────────────────────────────────────────────────
 RUN mkdir -p /opt/code-server && \
     curl -fsSL https://github.com/gitpod-io/openvscode-server/releases/download/openvscode-server-v1.109.5/openvscode-server-v1.109.5-linux-x64.tar.gz | \
     tar -xz --strip-components=1 -C /opt/code-server
@@ -18,25 +20,31 @@ ENV HOME="/home/workspace"
 # Create workspace dir early — the extension installer writes to $HOME/.openvscode-server/extensions
 RUN mkdir -p /home/workspace && chmod 777 /home/workspace
 
-# ── Extensions (heavy — kept high for cache efficiency) ────────────────────────
+# ── Extensions ─────────────────────────────────────────────────────────────────
+# NOTE: ms-vscode.cpptools is a proprietary Microsoft extension NOT available on
+#       Open-VSX. Use clangd (llvm-vs-code-extensions.vscode-clangd) instead —
+#       it is faster, open-source, and fully supported on Open-VSX.
 SHELL ["/bin/bash", "-c"]
-RUN \
+RUN set -e && \
     exts=( \
-    gitpod.gitpod-theme \
-    pkief.material-icon-theme \
-    eamodio.gitlens \
-    usernamehw.errorlens \
-    oderwat.indent-rainbow \
-    ms-vscode.cpptools \
-    llvm-vs-code-extensions.vscode-clangd \
-    ms-vscode.cmake-tools \
-    vadimcn.vscode-lldb \
+      gitpod.gitpod-theme \
+      pkief.material-icon-theme \
+      eamodio.gitlens \
+      usernamehw.errorlens \
+      oderwat.indent-rainbow \
+      llvm-vs-code-extensions.vscode-clangd \
+      ms-vscode.cmake-tools \
+      vadimcn.vscode-lldb \
+      formulahendry.code-runner \
     ) \
-    && for ext in "${exts[@]}"; do ${OPENVSCODE} --install-extension "${ext}"; done
+    && for ext in "${exts[@]}"; do \
+         echo "→ Installing ${ext}" ; \
+         ${OPENVSCODE} --install-extension "${ext}" || echo "⚠ Failed: ${ext} (skipping)" ; \
+       done
 
-# ── Workspace & VS Code settings ───────────────────────────────────────────────
+# ── Workspace & VS Code settings ──────────────────────────────────────────────
 RUN mkdir -p /opt/collabcode-defaults && \
-    echo '{"files.autoSave":"afterDelay","files.autoSaveDelay":500,"workbench.colorTheme":"Default Dark Modern","editor.formatOnPaste":true,"editor.mouseWheelZoom":true,"editor.wordWrap":"on","editor.aiStats.enabled":false,"editor.autoIndentOnPaste":true,"editor.cursorSmoothCaretAnimation":"on","workbench.secondarySideBar.defaultVisibility":"hidden","workbench.iconTheme":"vs-seti","workbench.statusBar.visible":true,"workbench.view.alwaysShowHeaderActions":true,"window.autoDetectColorScheme":false,"chat.agent.enabled":false,"terminal.integrated.middleClickBehavior":"paste","window.menuBarVisibility":"visible","terminal.integrated.cwd":"/home/workspace","terminal.integrated.defaultProfile.linux":"bash","remote.autoForwardPorts":true,"remote.autoForwardPortsSource":"hybrid","remote.localPortHost":"localhost","remote.forwardedPorts.useLocalhost":false,"terminal.integrated.links.localPortHost":"localhost","remote.restoreForwardedPorts":true}' \
+    echo '{"files.autoSave":"afterDelay","files.autoSaveDelay":500,"workbench.colorTheme":"Default Dark Modern","editor.formatOnPaste":true,"editor.mouseWheelZoom":true,"editor.wordWrap":"on","editor.aiStats.enabled":false,"editor.autoIndentOnPaste":true,"editor.cursorSmoothCaretAnimation":"on","workbench.secondarySideBar.defaultVisibility":"hidden","workbench.iconTheme":"vs-seti","workbench.statusBar.visible":true,"workbench.view.alwaysShowHeaderActions":true,"window.autoDetectColorScheme":false,"chat.agent.enabled":false,"terminal.integrated.middleClickBehavior":"paste","window.menuBarVisibility":"visible","terminal.integrated.cwd":"/home/workspace","terminal.integrated.defaultProfile.linux":"bash","remote.autoForwardPorts":true,"remote.autoForwardPortsSource":"hybrid","remote.localPortHost":"localhost","remote.forwardedPorts.useLocalhost":false,"terminal.integrated.links.localPortHost":"localhost","remote.restoreForwardedPorts":true,"code-runner.runInTerminal":true,"code-runner.preserveFocus":true,"clangd.arguments":["--compile-commands-dir=${workspaceFolder}"]}' \
     > /opt/collabcode-defaults/settings.json
 
 # ── Entrypoint & show-url scripts ─────────────────────────────────────────────
@@ -44,13 +52,13 @@ COPY entrypoint.sh /usr/local/bin/entrypoint.sh
 COPY show-url.sh /usr/local/bin/show-url
 RUN chmod +x /usr/local/bin/entrypoint.sh /usr/local/bin/show-url
 
-# ── Shell environment ────────────────────────────────────────────────────────
+# ── Shell environment ─────────────────────────────────────────────────────────
 RUN echo 'if [ -d "/home/workspace" ]; then cd /home/workspace; fi' >> /etc/bash.bashrc && \
     echo 'if [ -d "/home/workspace" ]; then cd /home/workspace; fi' >> /root/.bashrc && \
     echo 'show-url' >> /etc/bash.bashrc && \
     echo 'show-url' >> /root/.bashrc
 
-# ── Terminal Proxy Fixer Extension ───────────────────────────────────────────
+# ── Terminal Proxy Fixer Extension ────────────────────────────────────────────
 COPY extensions/terminal-proxy-fixer /opt/terminal-proxy-fixer
 
 WORKDIR /home/workspace
