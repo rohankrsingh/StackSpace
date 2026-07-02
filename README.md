@@ -17,7 +17,7 @@ Code together in a real VS Code, in the cloud, from your browser. No setup. No i
 
 </div>
 
----
+
 
 ## 🎬 Demo
 
@@ -29,7 +29,7 @@ https://github.com/user-attachments/assets/32757bfc-122a-4a35-8379-d78ab6c6527f
 
 *Watch the full demo: room creation, launching a cloud IDE, real-time collaboration, whiteboard, and team chat — all running on AWS Fargate.*
 
----
+
 
 ## 🚀 What is StackSpace?
 
@@ -45,7 +45,7 @@ Think of it as **your own private Repl.it**, but self-hosted on AWS and powered 
 - **Collaborative whiteboard** — draw diagrams together using Excalidraw, synced over WebSockets
 - **Team chat** with file sharing — built-in, no need for a separate Slack window
 
----
+
 
 ## ✨ Features
 
@@ -104,40 +104,61 @@ Full shortcut system built with a custom `useKeyboardShortcuts` hook (Ctrl+Alt t
 | `Ctrl+/` | Show shortcuts dialog |
 | `Escape` | Close dock/dialog |
 
----
 
 ## 🏗️ Architecture
 
-```
-                          ┌─────────────────────┐
-    Browser               │     Next.js App      │
-    ──────                │   (Vercel / Self)    │
-    User ──────────────►  │                      │
-                          │  ┌───────────────┐   │
-                          │  │  API Routes   │   │
-                          │  │  /api/rooms/* │   │
-                          │  └───────┬───────┘   │
-                          └──────────┼───────────┘
-                                     │
-              ┌──────────────────────┼────────────────────────┐
-              │                      │                        │
-              ▼                      ▼                        ▼
-    ┌─────────────────┐   ┌──────────────────┐   ┌──────────────────┐
-    │   Appwrite Cloud│   │   AWS ECS Fargate │   │  Socket.IO Server│
-    │                 │   │                  │   │  (Deployed on ECS│
-    │  - Auth         │   │  Per-room Docker │   │   or standalone) │
-    │  - Database     │   │  containers with │   │                  │
-    │  - File Storage │   │  OpenVSCode      │   │  - Room presence │
-    │  - Realtime     │   │  Server          │   │  - Whiteboard    │
-    └─────────────────┘   └────────┬─────────┘   │  - Join requests │
-                                   │              └──────────────────┘
-                                   │ EFS Mount
-                          ┌────────▼─────────┐
-                          │    AWS EFS        │
-                          │  (Persistent      │
-                          │   workspace per   │
-                          │   room)           │
-                          └───────────────────┘
+```mermaid
+graph TD
+    %% Styling
+    classDef client fill:#10B981,stroke:#059669,stroke-width:2px,color:#fff;
+    classDef next fill:#000000,stroke:#333333,stroke-width:2px,color:#fff;
+    classDef cloud fill:#2563EB,stroke:#1D4ED8,stroke-width:2px,color:#fff;
+    classDef aws fill:#FF9900,stroke:#E68A00,stroke-width:2px,color:#fff;
+    classDef socket fill:#6366F1,stroke:#4F46E5,stroke-width:2px,color:#fff;
+
+    subgraph Client ["Client Side (Browser)"]
+        User(["Developer / Teammate"])
+        UI["Next.js Web UI<br>(React 19 / RTK)"]
+        IDE["Embedded OpenVSCode<br>(Iframe)"]
+    end
+
+    subgraph AppServer ["Application Hosting"]
+        NextJS["Next.js App Server<br>(Vercel / Node.js)"]
+        API["API Routes<br>(/api/rooms/*)"]
+    end
+
+    subgraph BackendServices ["Backend & Collaboration"]
+        Appwrite["Appwrite Cloud<br>(Auth, Database, Storage, Realtime)"]
+        SocketIO["Socket.IO Server<br>(Presence, Whiteboard Sync)"]
+    end
+
+    subgraph AWSInfra ["AWS Cloud Infrastructure"]
+        ECS["AWS ECS Fargate Cluster"]
+        Containers["Isolated IDE Containers<br>(Python, Node, Java, C++)"]
+        EFS[("AWS EFS<br>(Persistent Volume per Room)")]
+    end
+
+    %% Interactions
+    User -->|"1. Navigates / Codes"| UI
+    UI -->|"2. Authenticates & Fetches Room Metadata"| Appwrite
+    UI -->|"3. Connects for Live Collab & Whiteboard"| SocketIO
+    
+    UI -->|"4. Starts / Stops IDE Container"| NextJS
+    NextJS --> API
+    API -->|"5. Provisions serverless compute"| ECS
+    
+    ECS -->|"6. Launches"| Containers
+    Containers -->|"7. Mounts workspace files"| EFS
+    
+    UI -->|"8. Connects directly to IDE instance"| IDE
+    IDE -.->|"Accesses running container"| Containers
+
+    %% Class applications
+    class User,UI,IDE client;
+    class NextJS,API next;
+    class Appwrite cloud;
+    class ECS,Containers,EFS aws;
+    class SocketIO socket;
 ```
 
 ### Infrastructure
@@ -148,7 +169,7 @@ Full shortcut system built with a custom `useKeyboardShortcuts` hook (Ctrl+Alt t
 - **Vercel** — frontend and API routes deployment
 - **Appwrite Cloud** — auth, database, realtime subscriptions, file storage
 
----
+
 
 ## 📁 Project Structure
 
@@ -198,7 +219,7 @@ stackspace/
     └── demo.webm              # Project demo video
 ```
 
----
+
 
 ## 🧰 Tech Stack
 
@@ -218,7 +239,7 @@ stackspace/
 
 | **Container Registry** | AWS ECR + Docker Hub | Multi-registry image distribution |
 
----
+
 
 ## 🚀 Running Locally
 
@@ -260,7 +281,7 @@ The app will be at `http://localhost:3000`.
 
 > **Note:** For the IDE containers to work locally, Docker must be running. The app falls back gracefully if no containers are available.
 
----
+
 
 ## ☁️ Production Deployment
 
@@ -276,7 +297,7 @@ The app will be at `http://localhost:3000`.
 
 See `docs/` for detailed architecture notes and deployment guides.
 
----
+
 
 ## 📐 Design Decisions & Technical Highlights
 
@@ -293,7 +314,7 @@ Lower latency for frequent updates (every canvas change). Appwrite Realtime is u
 It's the open-source core of VS Code (same codebase, open-source extensions via Open-VSX), maintained by Gitpod. It's the most mature self-hostable VS Code solution available.
 
 
----
+
 
 ## 🧑‍💻 About
 
@@ -305,7 +326,7 @@ This project covers:
 - Full-stack TypeScript development (frontend + backend + infra)
 - DevOps: Docker image pipelines, AWS ECS, EFS, ECR
 
----
+
 
 ## 📄 License
 
