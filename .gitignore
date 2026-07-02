@@ -69,3 +69,4 @@ docker
 
 .vercel
 .env*.local
+skills-lock.json
