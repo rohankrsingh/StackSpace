@@ -23,7 +23,9 @@ Code together in a real VS Code, in the cloud, from your browser. No setup. No i
 
 > ⚠️ **Note:** The live deployment is currently offline — my free AWS tier expired. The video below shows the fully working project.
 
-![StackSpace Demo](assets/demo.webm)
+
+https://github.com/user-attachments/assets/32757bfc-122a-4a35-8379-d78ab6c6527f
+
 
 *Watch the full demo: room creation, launching a cloud IDE, real-time collaboration, whiteboard, and team chat — all running on AWS Fargate.*
 
