@@ -16,7 +16,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { useSelector, useDispatch } from "react-redux";
 import { RootState, AppDispatch } from "@/store";
 import { signOut } from "@/store/slices/authSlice";
-import { getUserPreferences } from "@/lib/preferences";
+import { usePreferences } from "@/components/PreferencesProvider";
 
 interface MenuItem {
     label: string;
@@ -43,21 +43,11 @@ export default function ProfileDropdown({
     ...props
 }: ProfileDropdownProps) {
     const [isOpen, setIsOpen] = React.useState(false);
-    const [avatarUrl, setAvatarUrl] = React.useState<string | undefined>(propAvatarUrl);
+    const { preferences } = usePreferences();
+    const avatarUrl = propAvatarUrl || preferences.avatar || undefined;
     const router = useRouter();
     const dispatch = useDispatch<AppDispatch>();
     const user = useSelector((state: RootState) => state.auth.user);
-
-    // Fetch avatar from user preferences
-    React.useEffect(() => {
-        if (!propAvatarUrl) {
-            getUserPreferences().then((prefs) => {
-                if (prefs.avatar) {
-                    setAvatarUrl(prefs.avatar);
-                }
-            });
-        }
-    }, [propAvatarUrl]);
 
     const handleSignOut = async () => {
         await dispatch(signOut());
@@ -207,27 +197,27 @@ export default function ProfileDropdown({
 
     // Full version with name and email
     return (
-        <div className={cn("relative", className)} {...props}>
+        <div className={cn("relative w-full", className)} {...props}>
             <DropdownMenu onOpenChange={setIsOpen}>
-                <div className="group relative">
+                <div className="group relative w-full">
                     <DropdownMenuTrigger asChild>
                         <button
                             type="button"
-                            className="flex items-center gap-3 p-2.5 rounded-2xl bg-background/80 border border-border/60 hover:border-border hover:bg-muted/50 hover:shadow-sm transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-primary/20"
+                            className="w-full flex items-center justify-between gap-3 p-3 rounded-xl bg-zinc-950 border border-zinc-800/80 hover:border-zinc-700 hover:bg-zinc-900/40 hover:shadow-sm transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-green-500/20"
                         >
                             <div className="text-left flex-1 min-w-0">
-                                <div className="text-sm font-medium text-foreground tracking-tight leading-tight truncate">
+                                <div className="text-sm font-semibold text-white tracking-tight leading-tight truncate">
                                     {user?.name || "User"}
                                 </div>
-                                <div className="text-xs text-muted-foreground tracking-tight leading-tight truncate">
+                                <div className="text-xs text-zinc-500 tracking-tight leading-tight truncate mt-1">
                                     {user?.email || "user@example.com"}
                                 </div>
                             </div>
                             <div className="relative shrink-0">
-                                <div className="w-10 h-10 rounded-full bg-linear-to-br from-primary via-primary/80 to-primary/60 p-0.5">
-                                    <Avatar className="w-full h-full border-2 border-background">
+                                <div className="w-10 h-10 rounded-full bg-gradient-to-br from-green-400 via-emerald-500 to-teal-500 p-0.5">
+                                    <Avatar className="w-full h-full border-2 border-zinc-950">
                                         <AvatarImage src={avatarUrl} alt={user?.name || "User"} />
-                                        <AvatarFallback className="text-xs font-semibold bg-background text-foreground">
+                                        <AvatarFallback className="text-xs font-bold bg-zinc-900 text-zinc-300">
                                             {getInitials(user?.name || "U")}
                                         </AvatarFallback>
                                     </Avatar>
@@ -271,25 +261,25 @@ export default function ProfileDropdown({
                     <DropdownMenuContent
                         align="end"
                         sideOffset={8}
-                        className="w-64 p-2 bg-popover/95 backdrop-blur-sm border border-border/60 rounded-2xl shadow-xl"
+                        className="w-64 p-2 bg-zinc-950/95 backdrop-blur-md border border-zinc-900 rounded-2xl shadow-xl"
                     >
                         {/* User Info Header */}
                         <div className="px-3 py-2 mb-2 flex items-center gap-3">
-                            <div className="w-10 h-10 rounded-full bg-linear-to-br from-primary via-primary/80 to-primary/60 p-0.5 shrink-0">
-                                <Avatar className="w-full h-full border-2 border-background">
+                            <div className="w-10 h-10 rounded-full bg-gradient-to-br from-green-400 via-emerald-500 to-teal-500 p-0.5 shrink-0">
+                                <Avatar className="w-full h-full border-2 border-zinc-950">
                                     <AvatarImage src={avatarUrl} alt={user?.name || "User"} />
-                                    <AvatarFallback className="text-xs font-semibold bg-background text-foreground">
+                                    <AvatarFallback className="text-xs font-bold bg-zinc-900 text-zinc-300">
                                         {getInitials(user?.name || "U")}
                                     </AvatarFallback>
                                 </Avatar>
                             </div>
                             <div className="min-w-0">
-                                <p className="text-sm font-semibold text-foreground truncate">{user?.name || "User"}</p>
-                                <p className="text-xs text-muted-foreground truncate">{user?.email || "user@example.com"}</p>
+                                <p className="text-sm font-semibold text-white truncate">{user?.name || "User"}</p>
+                                <p className="text-xs text-zinc-500 truncate">{user?.email || "user@example.com"}</p>
                             </div>
                         </div>
 
-                        <DropdownMenuSeparator className="bg-border/50" />
+                        <DropdownMenuSeparator className="bg-zinc-900" />
 
                         <div className="space-y-1 py-1">
                             {menuItems.map((item) => (

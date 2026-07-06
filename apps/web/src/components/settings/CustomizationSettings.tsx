@@ -7,10 +7,11 @@ import { Label } from "@/components/ui/label";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
-import { Loader2, Palette, Monitor, Moon, Sun, Save, RotateCcw, Code, Check } from "lucide-react";
+import { Palette, Monitor, Moon, Sun, Save, RotateCcw, Code, Check } from "lucide-react";
 import { usePreferences } from "@/components/PreferencesProvider";
 import { AccentSelector } from "./AccentSelector";
 import { Separator } from "@/components/ui/separator";
+import { addToast } from "@heroui/react";
 
 const fontOptions = [
     { value: "Inter", label: "Inter" },
@@ -20,13 +21,13 @@ const fontOptions = [
     { value: "Source Code Pro", label: "Source Code Pro" },
     { value: "JetBrains Mono", label: "JetBrains Mono" },
     { value: "Fira Code", label: "Fira Code" },
-];
+] as const;
 
 const fontSizeOptions = [
     { value: "small", label: "Small (14px)" },
     { value: "medium", label: "Medium (16px)" },
     { value: "large", label: "Large (18px)" },
-];
+] as const;
 
 const editorThemeOptions = [
     { value: "vs-dark", label: "VS Dark" },
@@ -35,9 +36,7 @@ const editorThemeOptions = [
     { value: "monokai", label: "Monokai" },
     { value: "github-dark", label: "GitHub Dark" },
     { value: "dracula", label: "Dracula" },
-];
-
-import { addToast } from "@heroui/react";
+] as const;
 
 export function CustomizationSettings() {
     const { preferences, updateMultiplePreferences, resetToDefaults, loading } = usePreferences();
@@ -106,7 +105,7 @@ export function CustomizationSettings() {
             addToast({
                 title: "Settings Reset",
                 description: "Preferences have been restored to default values.",
-                color: "primary",
+                color: "success",
                 variant: "flat"
             });
         } catch (error: any) {
@@ -124,8 +123,9 @@ export function CustomizationSettings() {
 
     if (loading) {
         return (
-            <div className="flex items-center justify-center h-64">
-                <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+            <div className="flex flex-col items-center justify-center py-20 text-zinc-500 gap-2.5">
+                <Loader2Spinner />
+                <span className="text-xs font-mono tracking-wider uppercase animate-pulse">Loading settings...</span>
             </div>
         );
     }
@@ -133,68 +133,58 @@ export function CustomizationSettings() {
     return (
         <div className="space-y-6">
             {/* Theme Selection */}
-            <Card className="border-border/50">
+            <Card className="bg-zinc-950/40 border-zinc-900 shadow-md">
                 <CardHeader className="pb-4">
-                    <CardTitle className="flex items-center gap-2 text-base font-semibold tracking-tight">
-                        <div className="p-1.5 rounded-md bg-primary/10">
-                            <Palette className="h-4 w-4 text-primary" />
+                    <CardTitle className="flex items-center gap-2 text-base font-bold tracking-tight text-white">
+                        <div className="p-1.5 rounded-md bg-green-500/10 text-green-500">
+                            <Palette className="h-4 w-4" />
                         </div>
-                        Appearance
+                        Workspace Appearance
                     </CardTitle>
-                    <CardDescription className="text-sm">
-                        Customize the look and feel of your workspace.
+                    <CardDescription className="text-xs text-zinc-500">
+                        Customize the theme and accents of your workspace.
                     </CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-6">
                     {/* Site Theme */}
                     <div className="space-y-3">
-                        <Label className="text-sm font-medium">Site Theme</Label>
+                        <Label className="text-xs font-semibold text-zinc-400">Site Theme</Label>
                         <RadioGroup
                             value={theme}
                             onValueChange={(value: "light" | "dark" | "system") => setTheme(value)}
                             className="flex flex-wrap gap-3"
                             disabled={saving}
                         >
-                            <label htmlFor="light" className="cursor-pointer">
-                                <div className={`flex items-center gap-2 px-4 py-3 rounded-xl border-2 transition-all ${theme === "light"
-                                    ? "border-primary bg-primary/5"
-                                    : "border-border hover:border-muted-foreground/30"
-                                    }`}>
-                                    <RadioGroupItem value="light" id="light" className="sr-only" />
-                                    <Sun className="h-4 w-4" />
-                                    <span className="text-sm font-medium">Light</span>
-                                </div>
-                            </label>
-                            <label htmlFor="dark" className="cursor-pointer">
-                                <div className={`flex items-center gap-2 px-4 py-3 rounded-xl border-2 transition-all ${theme === "dark"
-                                    ? "border-primary bg-primary/5"
-                                    : "border-border hover:border-muted-foreground/30"
-                                    }`}>
-                                    <RadioGroupItem value="dark" id="dark" className="sr-only" />
-                                    <Moon className="h-4 w-4" />
-                                    <span className="text-sm font-medium">Dark</span>
-                                </div>
-                            </label>
-                            <label htmlFor="system" className="cursor-pointer">
-                                <div className={`flex items-center gap-2 px-4 py-3 rounded-xl border-2 transition-all ${theme === "system"
-                                    ? "border-primary bg-primary/5"
-                                    : "border-border hover:border-muted-foreground/30"
-                                    }`}>
-                                    <RadioGroupItem value="system" id="system" className="sr-only" />
-                                    <Monitor className="h-4 w-4" />
-                                    <span className="text-sm font-medium">System</span>
-                                </div>
-                            </label>
+                            {[
+                                { val: "light", label: "Light", icon: Sun },
+                                { val: "dark", label: "Dark", icon: Moon },
+                                { val: "system", label: "System", icon: Monitor },
+                            ].map((opt) => {
+                                const isSel = theme === opt.val;
+                                return (
+                                    <label key={opt.val} htmlFor={opt.val} className="cursor-pointer">
+                                        <div className={`flex items-center gap-2 px-4 py-2.5 rounded-xl border-2 transition-all duration-200 ${
+                                            isSel
+                                                ? "border-green-500 bg-green-500/5 text-white"
+                                                : "border-zinc-800 bg-zinc-900/20 text-zinc-400 hover:border-zinc-700 hover:text-white"
+                                        }`}>
+                                            <RadioGroupItem value={opt.val} id={opt.val} className="sr-only" />
+                                            <opt.icon className="h-4 w-4" />
+                                            <span className="text-xs font-medium">{opt.label}</span>
+                                        </div>
+                                    </label>
+                                );
+                            })}
                         </RadioGroup>
                     </div>
 
-                    <Separator />
+                    <Separator className="bg-zinc-900" />
 
                     {/* Accent Color */}
                     <div className="space-y-3">
-                        <Label className="text-sm font-medium">Accent Color</Label>
-                        <p className="text-sm text-muted-foreground">
-                            Choose a color that highlights important elements.
+                        <Label className="text-xs font-semibold text-zinc-400">Accent Color</Label>
+                        <p className="text-xs text-zinc-500">
+                            Select a dashboard highlight color for active panels.
                         </p>
                         <AccentSelector
                             selectedColor={accentColor}
@@ -203,24 +193,24 @@ export function CustomizationSettings() {
                         />
                     </div>
 
-                    <Separator />
+                    <Separator className="bg-zinc-900" />
 
                     {/* Font Settings */}
                     <div className="grid gap-5 sm:grid-cols-2">
                         <div className="space-y-2">
-                            <Label htmlFor="fontFamily" className="text-sm font-medium">Font Family</Label>
+                            <Label htmlFor="fontFamily" className="text-xs font-semibold text-zinc-400">Font Family</Label>
                             <Select
                                 value={fontFamily}
                                 onValueChange={setFontFamily}
                                 disabled={saving}
                             >
-                                <SelectTrigger id="fontFamily" className="h-10">
+                                <SelectTrigger id="fontFamily" className="h-10 bg-zinc-900 border-zinc-800 text-zinc-100 text-xs rounded-lg focus:ring-green-500/20">
                                     <SelectValue placeholder="Select font" />
                                 </SelectTrigger>
-                                <SelectContent>
+                                <SelectContent className="bg-zinc-950 border-zinc-900 text-zinc-300">
                                     {fontOptions.map((font) => (
-                                        <SelectItem key={font.value} value={font.value}>
-                                            <span style={{ fontFamily: font.value }} className="font-medium">
+                                        <SelectItem key={font.value} value={font.value} className="focus:bg-zinc-900 focus:text-white cursor-pointer text-xs">
+                                            <span style={{ fontFamily: font.value }}>
                                                 {font.label}
                                             </span>
                                         </SelectItem>
@@ -230,18 +220,18 @@ export function CustomizationSettings() {
                         </div>
 
                         <div className="space-y-2">
-                            <Label htmlFor="fontSize" className="text-sm font-medium">Font Size</Label>
+                            <Label htmlFor="fontSize" className="text-xs font-semibold text-zinc-400">Font Size</Label>
                             <Select
                                 value={fontSize}
                                 onValueChange={(value: "small" | "medium" | "large") => setFontSize(value)}
                                 disabled={saving}
                             >
-                                <SelectTrigger id="fontSize" className="h-10">
+                                <SelectTrigger id="fontSize" className="h-10 bg-zinc-900 border-zinc-800 text-zinc-100 text-xs rounded-lg focus:ring-green-500/20">
                                     <SelectValue placeholder="Select size" />
                                 </SelectTrigger>
-                                <SelectContent>
+                                <SelectContent className="bg-zinc-950 border-zinc-900 text-zinc-300 text-xs">
                                     {fontSizeOptions.map((size) => (
-                                        <SelectItem key={size.value} value={size.value}>
+                                        <SelectItem key={size.value} value={size.value} className="focus:bg-zinc-900 focus:text-white cursor-pointer text-xs">
                                             {size.label}
                                         </SelectItem>
                                     ))}
@@ -253,34 +243,34 @@ export function CustomizationSettings() {
             </Card>
 
             {/* Editor Settings */}
-            <Card className="border-border/50">
+            <Card className="bg-zinc-950/40 border-zinc-900 shadow-md">
                 <CardHeader className="pb-4">
-                    <CardTitle className="flex items-center gap-2 text-base font-semibold tracking-tight">
-                        <div className="p-1.5 rounded-md bg-primary/10">
-                            <Code className="h-4 w-4 text-primary" />
+                    <CardTitle className="flex items-center gap-2 text-base font-bold tracking-tight text-white">
+                        <div className="p-1.5 rounded-md bg-green-500/10 text-green-500">
+                            <Code className="h-4 w-4" />
                         </div>
-                        Editor Preferences
+                        Editor Configurations
                     </CardTitle>
-                    <CardDescription className="text-sm">
-                        Configure your code editor experience.
+                    <CardDescription className="text-xs text-zinc-500">
+                        Configure the defaults for your browser editor terminals.
                     </CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-6">
                     <div className="grid gap-5 sm:grid-cols-2">
                         <div className="space-y-2">
-                            <Label htmlFor="editorTheme" className="text-sm font-medium">Editor Theme</Label>
+                            <Label htmlFor="editorTheme" className="text-xs font-semibold text-zinc-400">Editor Theme</Label>
                             <Select
                                 value={editorTheme}
                                 onValueChange={setEditorTheme}
                                 disabled={saving}
                             >
-                                <SelectTrigger id="editorTheme" className="h-10">
+                                <SelectTrigger id="editorTheme" className="h-10 bg-zinc-900 border-zinc-800 text-zinc-100 text-xs rounded-lg focus:ring-green-500/20">
                                     <SelectValue placeholder="Select theme" />
                                 </SelectTrigger>
-                                <SelectContent>
-                                    {editorThemeOptions.map((theme) => (
-                                        <SelectItem key={theme.value} value={theme.value}>
-                                            {theme.label}
+                                <SelectContent className="bg-zinc-950 border-zinc-900 text-zinc-300 text-xs">
+                                    {editorThemeOptions.map((themeOpt) => (
+                                        <SelectItem key={themeOpt.value} value={themeOpt.value} className="focus:bg-zinc-900 focus:text-white cursor-pointer text-xs">
+                                            {themeOpt.label}
                                         </SelectItem>
                                     ))}
                                 </SelectContent>
@@ -288,29 +278,29 @@ export function CustomizationSettings() {
                         </div>
 
                         <div className="space-y-2">
-                            <Label htmlFor="tabSize" className="text-sm font-medium">Tab Size</Label>
+                            <Label htmlFor="tabSize" className="text-xs font-semibold text-zinc-400">Tab Size</Label>
                             <Select
                                 value={String(tabSize)}
                                 onValueChange={(value: string) => setTabSize(Number(value))}
                                 disabled={saving}
                             >
-                                <SelectTrigger id="tabSize" className="h-10">
+                                <SelectTrigger id="tabSize" className="h-10 bg-zinc-900 border-zinc-800 text-zinc-100 text-xs rounded-lg focus:ring-green-500/20">
                                     <SelectValue placeholder="Select tab size" />
                                 </SelectTrigger>
-                                <SelectContent>
-                                    <SelectItem value="2">2 spaces</SelectItem>
-                                    <SelectItem value="4">4 spaces</SelectItem>
-                                    <SelectItem value="8">8 spaces</SelectItem>
+                                <SelectContent className="bg-zinc-950 border-zinc-900 text-zinc-300 text-xs">
+                                    <SelectItem value="2" className="focus:bg-zinc-900 focus:text-white cursor-pointer">2 spaces</SelectItem>
+                                    <SelectItem value="4" className="focus:bg-zinc-900 focus:text-white cursor-pointer">4 spaces</SelectItem>
+                                    <SelectItem value="8" className="focus:bg-zinc-900 focus:text-white cursor-pointer">8 spaces</SelectItem>
                                 </SelectContent>
                             </Select>
                         </div>
                     </div>
 
-                    <div className="flex items-center justify-between p-4 rounded-xl bg-muted/50 border border-border/50">
+                    <div className="flex items-center justify-between p-4 rounded-xl bg-zinc-900/40 border border-zinc-900">
                         <div className="space-y-1">
-                            <Label htmlFor="wordWrap" className="text-sm font-medium">Word Wrap</Label>
-                            <p className="text-sm text-muted-foreground">
-                                Wrap long lines in the editor automatically.
+                            <Label htmlFor="wordWrap" className="text-xs font-semibold text-zinc-400">Word Wrap</Label>
+                            <p className="text-xs text-zinc-500">
+                                Automatically wrap extra long lines in the code preview pane.
                             </p>
                         </div>
                         <Switch
@@ -318,6 +308,7 @@ export function CustomizationSettings() {
                             checked={wordWrap}
                             onCheckedChange={setWordWrap}
                             disabled={saving}
+                            className="data-[state=checked]:bg-green-500"
                         />
                     </div>
                 </CardContent>
@@ -325,10 +316,14 @@ export function CustomizationSettings() {
 
             {/* Action Buttons */}
             <div className="flex items-center gap-4 pt-2">
-                <Button onClick={handleSave} disabled={saving || resetting} className="h-10 px-6">
+                <Button
+                    onClick={handleSave}
+                    disabled={saving || resetting}
+                    className="bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 text-black font-semibold shadow-lg shadow-green-950/20 px-6 h-10"
+                >
                     {saving ? (
                         <>
-                            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                            <Loader2Spinner className="mr-2 h-4 w-4 text-black" />
                             Saving...
                         </>
                     ) : (
@@ -342,11 +337,11 @@ export function CustomizationSettings() {
                     variant="outline"
                     onClick={handleReset}
                     disabled={saving || resetting}
-                    className="h-10"
+                    className="bg-zinc-900 border-zinc-800 text-zinc-300 hover:bg-zinc-850 hover:text-white h-10 px-6 rounded-lg"
                 >
                     {resetting ? (
                         <>
-                            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                            <Loader2Spinner className="mr-2 h-4 w-4" />
                             Resetting...
                         </>
                     ) : (
@@ -357,12 +352,21 @@ export function CustomizationSettings() {
                     )}
                 </Button>
                 {saveSuccess && (
-                    <span className="flex items-center gap-1.5 text-sm text-green-500 font-medium">
-                        <Check className="h-4 w-4" />
-                        Settings saved successfully!
+                    <span className="flex items-center gap-1.5 text-xs text-green-400 font-mono">
+                        <Check className="h-4 w-4 stroke-[3]" />
+                        Saved successfully!
                     </span>
                 )}
             </div>
         </div>
+    );
+}
+
+function Loader2Spinner({ className = "" }: { className?: string }) {
+    return (
+        <svg className={`animate-spin h-5 w-5 ${className || "text-green-500"}`} fill="none" viewBox="0 0 24 24">
+            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+        </svg>
     );
 }

@@ -71,8 +71,13 @@ export function PreferencesProvider({ children }: { children: React.ReactNode })
     // Apply accent color
     useEffect(() => {
         if (preferences.accentColor) {
-            document.documentElement.style.setProperty("--accent", preferences.accentColor);
-            document.documentElement.style.setProperty("--primary", preferences.accentColor);
+            const formattedColor = preferences.accentColor.includes("%")
+                ? `hsl(${preferences.accentColor})`
+                : preferences.accentColor;
+            document.documentElement.style.setProperty("--accent", formattedColor);
+            document.documentElement.style.setProperty("--primary", formattedColor);
+            document.documentElement.style.setProperty("--ring", formattedColor);
+            document.documentElement.style.setProperty("--accent-foreground", formattedColor);
         }
     }, [preferences.accentColor]);
 

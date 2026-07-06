@@ -5,14 +5,16 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Loader2, Lock, Mail, AlertTriangle, Eye, EyeOff } from "lucide-react";
-import { useSelector } from "react-redux";
+import { Lock, Mail, AlertTriangle, Eye, EyeOff, ShieldAlert, Check } from "lucide-react";
+import { useSelector, useDispatch } from "react-redux";
 import { RootState } from "@/store";
+import { updateUserFields } from "@/store/slices/authSlice";
 import { updatePassword, updateEmail } from "@/lib/preferences";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 
 export function AccountSettings() {
     const user = useSelector((state: RootState) => state.auth.user);
+    const dispatch = useDispatch();
 
     // Password change state
     const [currentPassword, setCurrentPassword] = useState("");
@@ -88,6 +90,7 @@ export function AccountSettings() {
         setEmailSaving(true);
         try {
             await updateEmail(newEmail, emailPassword);
+            dispatch(updateUserFields({ email: newEmail }));
             setEmailSuccess(true);
             setNewEmail("");
             setEmailPassword("");
@@ -108,72 +111,74 @@ export function AccountSettings() {
     return (
         <div className="space-y-6">
             {/* Current Account Info */}
-            <Card>
+            <Card className="bg-zinc-950/40 border-zinc-900 shadow-md">
                 <CardHeader>
-                    <CardTitle>Account Information</CardTitle>
-                    <CardDescription>
-                        Your current account details.
+                    <CardTitle className="text-base font-bold text-white tracking-tight">Account Information</CardTitle>
+                    <CardDescription className="text-xs text-zinc-500">
+                        Your registered display details.
                     </CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-4">
                     <div className="grid gap-4 sm:grid-cols-2">
-                        <div>
-                            <Label className="text-muted-foreground text-xs">Display Name</Label>
-                            <p className="font-medium">{user?.name || "Not set"}</p>
+                        <div className="bg-zinc-900/40 p-3 rounded-lg border border-zinc-900">
+                            <Label className="text-zinc-500 text-[10px] font-semibold uppercase tracking-wider">Display Name</Label>
+                            <p className="font-semibold text-sm text-white mt-1">{user?.name || "Not set"}</p>
                         </div>
-                        <div>
-                            <Label className="text-muted-foreground text-xs">Email</Label>
-                            <p className="font-medium">{user?.email || "Not set"}</p>
+                        <div className="bg-zinc-900/40 p-3 rounded-lg border border-zinc-900">
+                            <Label className="text-zinc-500 text-[10px] font-semibold uppercase tracking-wider">Email Address</Label>
+                            <p className="font-semibold text-sm text-white mt-1">{user?.email || "Not set"}</p>
                         </div>
                     </div>
                 </CardContent>
             </Card>
 
             {/* Password Change */}
-            <Card>
+            <Card className="bg-zinc-950/40 border-zinc-900 shadow-md">
                 <CardHeader>
-                    <CardTitle className="flex items-center gap-2">
-                        <Lock className="h-5 w-5" />
+                    <CardTitle className="flex items-center gap-2 text-base font-bold text-white tracking-tight">
+                        <div className="p-1.5 rounded-md bg-green-500/10 text-green-500">
+                            <Lock className="h-4 w-4" />
+                        </div>
                         Change Password
                     </CardTitle>
-                    <CardDescription>
-                        Update your password to keep your account secure.
+                    <CardDescription className="text-xs text-zinc-500">
+                        Update your password to keep your developer credentials secure.
                     </CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-4">
                     {passwordError && (
-                        <Alert variant="destructive">
-                            <AlertTriangle className="h-4 w-4" />
-                            <AlertTitle>Error</AlertTitle>
-                            <AlertDescription>{passwordError}</AlertDescription>
+                        <Alert className="border-red-950 bg-red-950/10 text-red-400">
+                            <AlertTriangle className="h-4 w-4 shrink-0 text-red-400" />
+                            <AlertTitle className="text-xs font-bold uppercase tracking-wider">Update Error</AlertTitle>
+                            <AlertDescription className="text-xs">{passwordError}</AlertDescription>
                         </Alert>
                     )}
 
                     {passwordSuccess && (
-                        <Alert className="border-green-500 bg-green-500/10">
-                            <AlertTitle className="text-green-500">Success!</AlertTitle>
-                            <AlertDescription className="text-green-500/80">
-                                Your password has been updated successfully.
+                        <Alert className="border-green-950 bg-green-950/10 text-green-400">
+                            <Check className="h-4 w-4 shrink-0 text-green-400" />
+                            <AlertTitle className="text-xs font-bold uppercase tracking-wider">Success!</AlertTitle>
+                            <AlertDescription className="text-xs">
+                                Your account password has been updated.
                             </AlertDescription>
                         </Alert>
                     )}
 
                     <div className="space-y-2">
-                        <Label htmlFor="currentPassword">Current Password</Label>
-                        <div className="relative">
-                            <Input
-                                id="currentPassword"
-                                type={showPasswords ? "text" : "password"}
-                                value={currentPassword}
-                                onChange={(e) => setCurrentPassword(e.target.value)}
-                                placeholder="Enter current password"
-                                disabled={passwordSaving}
-                            />
-                        </div>
+                        <Label htmlFor="currentPassword" className="text-xs font-semibold text-zinc-400">Current Password</Label>
+                        <Input
+                            id="currentPassword"
+                            type={showPasswords ? "text" : "password"}
+                            value={currentPassword}
+                            onChange={(e) => setCurrentPassword(e.target.value)}
+                            placeholder="Enter current password"
+                            disabled={passwordSaving}
+                            className="bg-zinc-900 border-zinc-800 text-zinc-100 placeholder-zinc-600 focus:border-green-500/30 text-xs rounded-lg h-10"
+                        />
                     </div>
 
                     <div className="space-y-2">
-                        <Label htmlFor="newPassword">New Password</Label>
+                        <Label htmlFor="newPassword" className="text-xs font-semibold text-zinc-400">New Password</Label>
                         <Input
                             id="newPassword"
                             type={showPasswords ? "text" : "password"}
@@ -181,11 +186,12 @@ export function AccountSettings() {
                             onChange={(e) => setNewPassword(e.target.value)}
                             placeholder="Enter new password"
                             disabled={passwordSaving}
+                            className="bg-zinc-900 border-zinc-800 text-zinc-100 placeholder-zinc-600 focus:border-green-500/30 text-xs rounded-lg h-10"
                         />
                     </div>
 
                     <div className="space-y-2">
-                        <Label htmlFor="confirmPassword">Confirm New Password</Label>
+                        <Label htmlFor="confirmPassword" className="text-xs font-semibold text-zinc-400">Confirm New Password</Label>
                         <Input
                             id="confirmPassword"
                             type={showPasswords ? "text" : "password"}
@@ -193,6 +199,7 @@ export function AccountSettings() {
                             onChange={(e) => setConfirmPassword(e.target.value)}
                             placeholder="Confirm new password"
                             disabled={passwordSaving}
+                            className="bg-zinc-900 border-zinc-800 text-zinc-100 placeholder-zinc-600 focus:border-green-500/30 text-xs rounded-lg h-10"
                         />
                     </div>
 
@@ -202,19 +209,24 @@ export function AccountSettings() {
                             size="sm"
                             type="button"
                             onClick={() => setShowPasswords(!showPasswords)}
+                            className="text-zinc-400 hover:text-white hover:bg-zinc-900/60 text-xs"
                         >
                             {showPasswords ? (
-                                <><EyeOff className="mr-2 h-4 w-4" /> Hide Passwords</>
+                                <><EyeOff className="mr-2 h-3.5 w-3.5" /> Hide Passwords</>
                             ) : (
-                                <><Eye className="mr-2 h-4 w-4" /> Show Passwords</>
+                                <><Eye className="mr-2 h-3.5 w-3.5" /> Show Passwords</>
                             )}
                         </Button>
                     </div>
 
-                    <Button onClick={handlePasswordChange} disabled={passwordSaving}>
+                    <Button
+                        onClick={handlePasswordChange}
+                        disabled={passwordSaving}
+                        className="bg-zinc-900 hover:bg-zinc-800 text-zinc-300 font-semibold border border-zinc-800 transition-colors h-10 px-5 text-xs rounded-lg mt-2"
+                    >
                         {passwordSaving ? (
                             <>
-                                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                                <Loader2Spinner className="mr-2 h-4 w-4" />
                                 Updating...
                             </>
                         ) : (
@@ -225,36 +237,39 @@ export function AccountSettings() {
             </Card>
 
             {/* Email Change */}
-            <Card>
+            <Card className="bg-zinc-950/40 border-zinc-900 shadow-md">
                 <CardHeader>
-                    <CardTitle className="flex items-center gap-2">
-                        <Mail className="h-5 w-5" />
-                        Change Email
+                    <CardTitle className="flex items-center gap-2 text-base font-bold text-white tracking-tight">
+                        <div className="p-1.5 rounded-md bg-green-500/10 text-green-500">
+                            <Mail className="h-4 w-4" />
+                        </div>
+                        Change Email Address
                     </CardTitle>
-                    <CardDescription>
-                        Update your email address. You'll need to verify the new email.
+                    <CardDescription className="text-xs text-zinc-500">
+                        Update your registered email. Verification is required.
                     </CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-4">
                     {emailError && (
-                        <Alert variant="destructive">
-                            <AlertTriangle className="h-4 w-4" />
-                            <AlertTitle>Error</AlertTitle>
-                            <AlertDescription>{emailError}</AlertDescription>
+                        <Alert className="border-red-950 bg-red-950/10 text-red-400">
+                            <AlertTriangle className="h-4 w-4 shrink-0 text-red-400" />
+                            <AlertTitle className="text-xs font-bold uppercase tracking-wider">Update Error</AlertTitle>
+                            <AlertDescription className="text-xs">{emailError}</AlertDescription>
                         </Alert>
                     )}
 
                     {emailSuccess && (
-                        <Alert className="border-green-500 bg-green-500/10">
-                            <AlertTitle className="text-green-500">Success!</AlertTitle>
-                            <AlertDescription className="text-green-500/80">
-                                Your email has been updated successfully.
+                        <Alert className="border-green-950 bg-green-950/10 text-green-400">
+                            <Check className="h-4 w-4 shrink-0 text-green-400" />
+                            <AlertTitle className="text-xs font-bold uppercase tracking-wider">Success!</AlertTitle>
+                            <AlertDescription className="text-xs">
+                                Your login email has been updated.
                             </AlertDescription>
                         </Alert>
                     )}
 
                     <div className="space-y-2">
-                        <Label htmlFor="newEmail">New Email Address</Label>
+                        <Label htmlFor="newEmail" className="text-xs font-semibold text-zinc-400">New Email Address</Label>
                         <Input
                             id="newEmail"
                             type="email"
@@ -262,28 +277,34 @@ export function AccountSettings() {
                             onChange={(e) => setNewEmail(e.target.value)}
                             placeholder="Enter new email"
                             disabled={emailSaving}
+                            className="bg-zinc-900 border-zinc-800 text-zinc-100 placeholder-zinc-600 focus:border-green-500/30 text-xs rounded-lg h-10"
                         />
                     </div>
 
                     <div className="space-y-2">
-                        <Label htmlFor="emailPassword">Current Password</Label>
+                        <Label htmlFor="emailPassword" className="text-xs font-semibold text-zinc-400">Current Password</Label>
                         <Input
                             id="emailPassword"
                             type="password"
                             value={emailPassword}
                             onChange={(e) => setEmailPassword(e.target.value)}
-                            placeholder="Enter your password to confirm"
+                            placeholder="Enter your account password to confirm"
                             disabled={emailSaving}
+                            className="bg-zinc-900 border-zinc-800 text-zinc-100 placeholder-zinc-600 focus:border-green-500/30 text-xs rounded-lg h-10"
                         />
-                        <p className="text-xs text-muted-foreground">
-                            Password is required to change your email.
+                        <p className="text-[10px] text-zinc-500 font-mono">
+                            Security prompt: Re-entering your password is required to change emails.
                         </p>
                     </div>
 
-                    <Button onClick={handleEmailChange} disabled={emailSaving}>
+                    <Button
+                        onClick={handleEmailChange}
+                        disabled={emailSaving}
+                        className="bg-zinc-900 hover:bg-zinc-800 text-zinc-300 font-semibold border border-zinc-800 transition-colors h-10 px-5 text-xs rounded-lg mt-2"
+                    >
                         {emailSaving ? (
                             <>
-                                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                                <Loader2Spinner className="mr-2 h-4 w-4" />
                                 Updating...
                             </>
                         ) : (
@@ -294,30 +315,45 @@ export function AccountSettings() {
             </Card>
 
             {/* Danger Zone */}
-            <Card className="border-destructive/50">
+            <Card className="bg-zinc-950/40 border-red-950/50 shadow-md">
                 <CardHeader>
-                    <CardTitle className="text-destructive flex items-center gap-2">
-                        <AlertTriangle className="h-5 w-5" />
-                        Danger Zone
+                    <CardTitle className="text-red-400 flex items-center gap-2 text-base font-bold tracking-tight">
+                        <div className="p-1.5 rounded-md bg-red-950/50 text-red-400">
+                            <ShieldAlert className="h-4 w-4" />
+                        </div>
+                        Caution Zone
                     </CardTitle>
-                    <CardDescription>
-                        Irreversible actions that affect your account.
+                    <CardDescription className="text-xs text-zinc-500">
+                        Destructive operations that cannot be reversed.
                     </CardDescription>
                 </CardHeader>
                 <CardContent>
-                    <div className="flex items-center justify-between">
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                         <div>
-                            <p className="font-medium">Delete Account</p>
-                            <p className="text-sm text-muted-foreground">
-                                Permanently delete your account and all associated data.
+                            <p className="font-bold text-xs text-white">Delete Account</p>
+                            <p className="text-[11px] text-zinc-500 mt-1">
+                                Permanently delete your developer profile, templates, and active sandbox configurations.
                             </p>
                         </div>
-                        <Button variant="destructive" disabled>
-                            Delete Account
+                        <Button
+                            variant="destructive"
+                            disabled
+                            className="bg-red-950/40 border border-red-900/50 hover:bg-red-900 hover:text-white text-red-400 text-xs h-10 px-5 cursor-not-allowed rounded-lg"
+                        >
+                            Delete Profile
                         </Button>
                     </div>
                 </CardContent>
             </Card>
         </div>
+    );
+}
+
+function Loader2Spinner({ className = "" }: { className?: string }) {
+    return (
+        <svg className={`animate-spin h-5 w-5 ${className || "text-green-500"}`} fill="none" viewBox="0 0 24 24">
+            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+        </svg>
     );
 }
